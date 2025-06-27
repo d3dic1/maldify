@@ -6,7 +6,7 @@ const getApiUrl = () => {
   // Check if we're in production (deployed environment)
   if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
     // In production, use the deployed backend URL
-    return 'https://your-backend-url.com/api'; // Replace with your actual backend URL
+    return 'https://maldify.onrender.com/api'; // Updated to your actual backend URL
   }
   // In development, use localhost backend
   return 'http://localhost:5001/api';
