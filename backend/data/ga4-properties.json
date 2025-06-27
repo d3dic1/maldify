@@ -1,0 +1,47 @@
+{
+  "properties": [
+    {
+      "id": "1750938412116",
+      "propertyId": "301519615",
+      "label": "Form Builder",
+      "addedAt": "2025-06-26T11:46:52.116Z",
+      "isActive": true
+    },
+    {
+      "id": "1750939288952",
+      "propertyId": "373238627",
+      "label": "Releasit COD",
+      "addedAt": "2025-06-26T12:01:28.952Z",
+      "isActive": true
+    },
+    {
+      "id": "1750939431941",
+      "propertyId": "390396005",
+      "label": "Releasit Form & Upsell",
+      "addedAt": "2025-06-26T12:03:51.941Z",
+      "isActive": true
+    },
+    {
+      "id": "1750943411880",
+      "propertyId": "379563166",
+      "label": "Loyalty Rewards",
+      "addedAt": "2025-06-26T13:10:11.880Z",
+      "isActive": true
+    },
+    {
+      "id": "1750943479485",
+      "propertyId": "301491848",
+      "label": "HA Product Options",
+      "addedAt": "2025-06-26T13:11:19.485Z",
+      "isActive": true
+    },
+    {
+      "id": "1750952022848",
+      "propertyId": "389865217",
+      "label": "Order Printer Pro",
+      "addedAt": "2025-06-26T15:33:42.848Z",
+      "isActive": true
+    }
+  ],
+  "defaultPropertyId": "389865217"
+}

@@ -1,0 +1,47 @@
+service: email-dashboard-api
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+  stage: ${opt:stage, 'prod'}
+  environment:
+    NODE_ENV: production
+    STAGE: ${self:provider.stage}
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - secretsmanager:GetSecretValue
+          Resource: 
+            - "arn:aws:secretsmanager:${self:provider.region}:*:secret:email-dashboard/*"
+        - Effect: Allow
+          Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+          Resource: "*"
+
+functions:
+  api:
+    handler: handler.api
+    events:
+      - http:
+          path: /{proxy+}
+          method: ANY
+          cors: true
+    environment:
+      FIREBASE_PROJECT_ID: ${ssm:/email-dashboard/${self:provider.stage}/firebase-project-id}
+      ORTTO_API_KEY: ${ssm:/email-dashboard/${self:provider.stage}/ortto-api-key}
+      OPENAI_API_KEY: ${ssm:/email-dashboard/${self:provider.stage}/openai-api-key}
+    timeout: 30
+    memorySize: 512
+
+plugins:
+  - serverless-offline
+
+custom:
+  serverless-offline:
+    httpPort: 3001
+    noPrependStageInUrl: true 

@@ -1,0 +1,65 @@
+{
+  "family": "email-dashboard-backend",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512",
+  "executionRoleArn": "arn:aws:iam::YOUR_ACCOUNT_ID:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::YOUR_ACCOUNT_ID:role/ecsTaskRole",
+  "containerDefinitions": [
+    {
+      "name": "email-dashboard-backend",
+      "image": "YOUR_ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/email-dashboard-backend:latest",
+      "portMappings": [
+        {
+          "containerPort": 8080,
+          "protocol": "tcp"
+        }
+      ],
+      "essential": true,
+      "environment": [
+        {
+          "name": "NODE_ENV",
+          "value": "production"
+        },
+        {
+          "name": "PORT",
+          "value": "8080"
+        }
+      ],
+      "secrets": [
+        {
+          "name": "FIREBASE_PROJECT_ID",
+          "valueFrom": "arn:aws:secretsmanager:REGION:YOUR_ACCOUNT_ID:secret:email-dashboard/firebase-project-id"
+        },
+        {
+          "name": "FIREBASE_PRIVATE_KEY",
+          "valueFrom": "arn:aws:secretsmanager:REGION:YOUR_ACCOUNT_ID:secret:email-dashboard/firebase-private-key"
+        },
+        {
+          "name": "ORTTO_API_KEY",
+          "valueFrom": "arn:aws:secretsmanager:REGION:YOUR_ACCOUNT_ID:secret:email-dashboard/ortto-api-key"
+        },
+        {
+          "name": "OPENAI_API_KEY",
+          "valueFrom": "arn:aws:secretsmanager:REGION:YOUR_ACCOUNT_ID:secret:email-dashboard/openai-api-key"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/email-dashboard-backend",
+          "awslogs-region": "REGION",
+          "awslogs-stream-prefix": "ecs"
+        }
+      },
+      "healthCheck": {
+        "command": ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 60
+      }
+    }
+  ]
+} 
