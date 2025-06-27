@@ -38,7 +38,8 @@ app.use(cors({
     'http://localhost:3000',
     'https://localhost:3000',
     'https://marketingdashboard-cdab5.web.app',
-    'https://marketingdashboard-cdab5.firebaseapp.com'
+    'https://marketingdashboard-cdab5.firebaseapp.com',
+    'https://maldifys.netlify.app'
   ],
   credentials: true
 }));
