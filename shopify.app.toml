@@ -2,7 +2,7 @@
 
 client_id = "1ef2fce47497534d788eb2e4e7f37466"
 name = "Maldify"
-application_url = "https://roger-introductory-always-fisheries.trycloudflare.com"
+application_url = "https://fifty-relating-christmas-gba.trycloudflare.com"
 embedded = true
 
 [build]
@@ -17,7 +17,7 @@ api_version = "2026-01"
 scopes = "read_orders,read_customers,read_products,write_products,write_checkouts"
 
 [auth]
-redirect_urls = [ "https://roger-introductory-always-fisheries.trycloudflare.com/api/auth" ]
+redirect_urls = [ "https://fifty-relating-christmas-gba.trycloudflare.com/api/auth" ]
 
 [[extensions]]
 type = "ui"
