@@ -10,7 +10,6 @@ const requiredEnvVars = {
   SHOPIFY_API_KEY: process.env.SHOPIFY_API_KEY,
   SHOPIFY_API_SECRET: process.env.SHOPIFY_API_SECRET,
   SHOPIFY_APP_URL: process.env.SHOPIFY_APP_URL,
-  HOST: process.env.HOST,
 };
 
 // Check for missing environment variables
@@ -27,8 +26,21 @@ if (missingVars.length > 0) {
   process.exit(1);
 }
 
-// Extract host information from SHOPIFY_APP_URL
-const appUrl = new URL(process.env.SHOPIFY_APP_URL);
+// Safely extract host information from SHOPIFY_APP_URL
+let appUrl;
+try {
+  // Ensure SHOPIFY_APP_URL has protocol
+  const appUrlString = process.env.SHOPIFY_APP_URL.startsWith('http') 
+    ? process.env.SHOPIFY_APP_URL 
+    : `https://${process.env.SHOPIFY_APP_URL}`;
+  
+  appUrl = new URL(appUrlString);
+} catch (error) {
+  console.error('❌ Invalid SHOPIFY_APP_URL:', process.env.SHOPIFY_APP_URL);
+  console.error('Error:', error.message);
+  process.exit(1);
+}
+
 const hostName = appUrl.hostname;
 const hostScheme = appUrl.protocol.replace(':', '');
 
