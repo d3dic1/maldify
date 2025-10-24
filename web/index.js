@@ -314,7 +314,11 @@ app.post("/api/billing/setup", async (req, res) => {
       } 
     });
 
-    const data = response.body.data;
+    if (!response.body) {
+      throw new Error("No response body received from Shopify");
+    }
+
+    const data = response.body.data || {};
     
     if (data.appSubscriptionCreate.userErrors.length > 0) {
       console.error("GraphQL user errors:", data.appSubscriptionCreate.userErrors);
@@ -428,7 +432,12 @@ app.get("/api/billing/check", async (req, res) => {
     `;
 
     const response = await client.query({ data: { query } });
-    const data = response.body.data;
+    
+    if (!response.body) {
+      throw new Error("No response body received from Shopify");
+    }
+
+    const data = response.body.data || {};
 
     const activeSubscriptions = data?.currentAppInstallation?.activeSubscriptions || [];
     const hasActiveSubscription = activeSubscriptions.length > 0;
@@ -504,7 +513,11 @@ app.get("/billing-redirect", async (req, res) => {
       } 
     });
 
-    const data = response.body.data;
+    if (!response.body) {
+      throw new Error("No response body received from Shopify");
+    }
+
+    const data = response.body.data || {};
     
     if (data.appSubscriptionActivate.userErrors.length > 0) {
       console.error("GraphQL user errors:", data.appSubscriptionActivate.userErrors);
