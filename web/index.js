@@ -276,10 +276,21 @@ app.post("/api/billing/setup", async (req, res) => {
     console.log(`Billing subscription created successfully: ${recurringCharge.id}`);
     console.log(`Confirmation URL: ${recurringCharge.confirmation_url}`);
 
-    // Return comprehensive response
+    // Ensure we have the confirmation URL
+    const confirmationUrl = recurringCharge.confirmation_url;
+    if (!confirmationUrl) {
+      console.error("No confirmation URL received from Shopify");
+      return res.status(500).json({
+        error: "Failed to get billing confirmation URL",
+        details: "Shopify did not return a confirmation URL"
+      });
+    }
+
+    // Return comprehensive response with both billing_url and confirmationUrl for compatibility
     res.status(200).json({
       success: true,
-      billing_url: recurringCharge.confirmation_url,
+      billing_url: confirmationUrl,
+      confirmationUrl: confirmationUrl, // Add this for frontend compatibility
       subscription_id: recurringCharge.id,
       plan_name: planName,
       plan_price: planPrice,
