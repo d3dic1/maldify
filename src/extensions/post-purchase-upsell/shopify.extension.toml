@@ -1,0 +1,29 @@
+# Learn more about configuring your extension at https://shopify.dev/docs/apps/tools/cli/configuration#extension-configuration
+
+name = "Maldify Post-Purchase Offer"
+type = "post_purchase"
+
+[build]
+command = ""
+path = "dist/extension.js"
+
+[metafields]
+[[metafields.definitions]]
+namespace = "maldify"
+key = "claimed"
+name = "Maldify Upsell Claimed"
+description = "Tracks whether the customer has claimed their post-purchase upsell offer"
+type = "single_line_text_field"
+validations = [
+  { name = "choices", value = "true,false" }
+]
+
+[[metafields.definitions]]
+namespace = "maldify"
+key = "initial_purchase"
+name = "Maldify Initial Purchase"
+description = "Marks the initial purchase to prevent duplicate upsell offers"
+type = "single_line_text_field"
+validations = [
+  { name = "choices", value = "true,false" }
+]
