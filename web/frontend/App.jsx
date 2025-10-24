@@ -1,8 +1,7 @@
 import React from "react";
 import { BrowserRouter } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { NavMenu } from "@shopify/app-bridge-react";
-import { AppProvider } from "@shopify/polaris";
+import { AppProvider, NavMenu } from "@shopify/app-bridge-react";
 import { Banner } from "@shopify/polaris";
 import Routes from "./Routes";
 
@@ -67,17 +66,19 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-      <PolarisProvider>
-        <BrowserRouter>
-          <QueryProvider>
-            <NavMenu>
-              <a href="/" rel="home" />
-              <a href="/pagename">{t("NavigationMenu.pageName")}</a>
-            </NavMenu>
-            <Routes pages={pages} />
-          </QueryProvider>
-        </BrowserRouter>
-      </PolarisProvider>
+      <AppProvider config={config}>
+        <PolarisProvider>
+          <BrowserRouter>
+            <QueryProvider>
+              <NavMenu>
+                <a href="/" rel="home" />
+                <a href="/pagename">{t("NavigationMenu.pageName")}</a>
+              </NavMenu>
+              <Routes pages={pages} />
+            </QueryProvider>
+          </BrowserRouter>
+        </PolarisProvider>
+      </AppProvider>
     </ErrorBoundary>
   );
 }

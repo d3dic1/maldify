@@ -87,8 +87,14 @@ export default function BillingCard() {
       console.log('Redirecting to billing confirmation:', confirmationUrl);
       
       // Use Shopify App Bridge Redirect action to safely redirect within iframe
-      const redirect = Redirect.create(app);
-      redirect.dispatch(Redirect.Action.REMOTE, confirmationUrl);
+      if (app && app.dispatch) {
+        const redirect = Redirect.create(app);
+        redirect.dispatch(Redirect.Action.REMOTE, confirmationUrl);
+      } else {
+        // Fallback to window.location if App Bridge is not available
+        console.warn('App Bridge not available, using window.location fallback');
+        window.location.href = confirmationUrl;
+      }
       
     } catch (err) {
       console.error('Error setting up billing:', err);
