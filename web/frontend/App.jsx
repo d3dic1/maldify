@@ -1,11 +1,11 @@
 import React from "react";
 import { BrowserRouter } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { AppProvider, NavMenu } from "@shopify/app-bridge-react";
+import { NavMenu } from "@shopify/app-bridge-react";
 import { Banner } from "@shopify/polaris";
 import Routes from "./Routes";
 
-import { QueryProvider, PolarisProvider } from "./components";
+import { QueryProvider, PolarisProvider, AppBridgeProvider } from "./components";
 
 // Debug component to catch and display errors
 function ErrorBoundary({ children }) {
@@ -66,7 +66,7 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-      <AppProvider config={config}>
+      <AppBridgeProvider config={config}>
         <PolarisProvider>
           <BrowserRouter>
             <QueryProvider>
@@ -78,7 +78,7 @@ export default function App() {
             </QueryProvider>
           </BrowserRouter>
         </PolarisProvider>
-      </AppProvider>
+      </AppBridgeProvider>
     </ErrorBoundary>
   );
 }
