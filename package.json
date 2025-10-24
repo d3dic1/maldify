@@ -11,12 +11,9 @@
     "generate": "shopify app generate",
     "deploy": "shopify app deploy"
   },
-  "dependencies": {},
+  "dependencies": {
+    "railway": "^2.0.17"
+  },
   "author": "kaldica",
-  "private": true,
-  "workspaces": [
-    "extensions/*",
-    "web",
-    "web/frontend"
-  ]
+  "private": true
 }
