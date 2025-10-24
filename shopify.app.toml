@@ -20,13 +20,13 @@ scopes = "read_orders,read_customers,read_products,write_products,write_checkout
 redirect_urls = [ "https://fifty-relating-christmas-gba.trycloudflare.com/api/auth" ]
 
 [[extensions]]
-type = "ui"
+type = "ui_extension"
 name = "Admin UI"
 handle = "app-admin-ui"
 path = "web/frontend"
 
 [[extensions]]
-type = "post_purchase"
+type = "post_purchase_extension"
 name = "Maldify Post-Purchase Offer"
 handle = "maldify-post-purchase"
 path = "src/extensions/post-purchase-upsell"
