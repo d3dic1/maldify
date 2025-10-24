@@ -1,12 +1,51 @@
 import React, { useEffect, useState } from 'react';
-import {
-  BlockStack,
-  Button,
-  Text,
-  usePostPurchase,
-  useMetafield,
-  useApplyMetafieldsChange,
-} from '@shopify/ui-extensions-react/checkout';
+
+// Mock UI components for development
+const BlockStack = ({ children, spacing }) => <div style={{ display: 'flex', flexDirection: 'column', gap: spacing || '8px' }}>{children}</div>;
+const Button = ({ children, onPress, loading, disabled, kind }) => (
+  <button 
+    onClick={onPress} 
+    disabled={disabled || loading}
+    style={{ 
+      padding: '12px 24px', 
+      backgroundColor: kind === 'primary' ? '#0070f3' : '#f0f0f0',
+      color: kind === 'primary' ? 'white' : 'black',
+      border: 'none',
+      borderRadius: '4px',
+      cursor: disabled || loading ? 'not-allowed' : 'pointer'
+    }}
+  >
+    {loading ? 'Loading...' : children}
+  </button>
+);
+const Text = ({ children, size, emphasis }) => (
+  <div style={{ 
+    fontSize: size === 'large' ? '18px' : '14px',
+    fontWeight: emphasis === 'bold' ? 'bold' : 'normal'
+  }}>
+    {children}
+  </div>
+);
+
+// Mock hooks for development
+const usePostPurchase = () => ({
+  updateMetafield: async ({ namespace, key, value }) => {
+    console.log('Mock updateMetafield:', { namespace, key, value });
+    return Promise.resolve();
+  }
+});
+
+const useMetafield = ({ namespace, key }) => {
+  // Mock metafield - return null for development
+  return null;
+};
+
+const useApplyMetafieldsChange = () => ({
+  type: 'updateMetafield',
+  namespace: 'maldify',
+  key: 'claimed',
+  value: 'true'
+});
 
 export default function PostPurchaseUpsell() {
   const postPurchase = usePostPurchase();
