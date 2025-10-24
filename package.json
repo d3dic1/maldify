@@ -12,6 +12,7 @@
     "deploy": "shopify app deploy"
   },
   "dependencies": {
+    "dotenv": "^17.2.3",
     "railway": "^2.0.17"
   },
   "author": "kaldica",

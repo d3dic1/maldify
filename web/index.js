@@ -1,4 +1,5 @@
 // @ts-check
+import 'dotenv/config'; // Load environment variables from .env file
 import { join } from "path";
 import { readFileSync } from "fs";
 import express from "express";
