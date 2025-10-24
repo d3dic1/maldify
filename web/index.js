@@ -228,22 +228,37 @@ app.post("/api/billing/setup", async (req, res) => {
   try {
     const session = res.locals.shopify.session;
     
-    // Safely read environment variables with defaults
+    // Safely read and validate environment variables
     const planName = process.env.SHOP_PLAN_NAME || "Maldify Pro Subscription";
     const planPrice = "29.99";
     const appUrl = process.env.SHOPIFY_APP_URL;
-    const planId = process.env.SHOP_PLAN_ID || "maldify-pro-monthly"; // Fallback plan ID
+    const planId = process.env.SHOP_PLAN_ID;
     
     // Validate required environment variables
-    if (!appUrl) {
+    const missingVars = [];
+    if (!appUrl) missingVars.push("SHOPIFY_APP_URL");
+    if (!planId) missingVars.push("SHOP_PLAN_ID");
+    
+    if (missingVars.length > 0) {
+      console.error(`Missing required environment variables: ${missingVars.join(", ")}`);
       return res.status(500).json({
-        error: "App URL not configured. Please set SHOPIFY_APP_URL environment variable."
+        error: "Billing plan not configured. Please set the following environment variables:",
+        missing_variables: missingVars,
+        details: "Required: SHOPIFY_APP_URL, SHOP_PLAN_ID"
+      });
+    }
+
+    // Validate session
+    if (!session || !session.shop) {
+      return res.status(401).json({
+        error: "Invalid session. Please ensure you're properly authenticated."
       });
     }
 
     console.log(`Creating billing subscription for shop: ${session.shop}`);
     console.log(`Plan: ${planName} - $${planPrice}/month`);
     console.log(`Plan ID: ${planId}`);
+    console.log(`Return URL: ${appUrl}/billing-redirect`);
 
     // Create a new recurring subscription using the modern Shopify Billing API
     const billingUrl = await shopify.api.rest.BillingRecurring.create({
@@ -259,32 +274,45 @@ app.post("/api/billing/setup", async (req, res) => {
 
     console.log(`Billing URL created successfully: ${billingUrl.confirmation_url}`);
 
+    // Return comprehensive response
     res.status(200).json({
       success: true,
       billing_url: billingUrl.confirmation_url,
       plan_name: planName,
       plan_price: planPrice,
       plan_id: planId,
-      currency: "USD"
+      currency: "USD",
+      shop: session.shop,
+      test_mode: process.env.NODE_ENV !== "production"
     });
 
   } catch (error) {
     console.error("Error setting up billing:", error);
     
-    // Provide more specific error messages
+    // Provide more specific error messages based on error type
     let errorMessage = "Failed to create billing subscription";
-    if (error.message.includes("unauthorized")) {
+    let errorCode = "BILLING_SETUP_ERROR";
+    
+    if (error.message.includes("unauthorized") || error.message.includes("401")) {
       errorMessage = "Unauthorized: Check your API credentials";
-    } else if (error.message.includes("invalid")) {
+      errorCode = "UNAUTHORIZED";
+    } else if (error.message.includes("invalid") || error.message.includes("400")) {
       errorMessage = "Invalid billing configuration";
-    } else if (error.message.includes("plan")) {
+      errorCode = "INVALID_CONFIG";
+    } else if (error.message.includes("plan") || error.message.includes("billing")) {
       errorMessage = "Billing plan configuration error";
+      errorCode = "PLAN_ERROR";
+    } else if (error.message.includes("network") || error.message.includes("timeout")) {
+      errorMessage = "Network error: Unable to connect to Shopify";
+      errorCode = "NETWORK_ERROR";
     }
     
     res.status(500).json({
       error: errorMessage,
+      error_code: errorCode,
       details: error.message,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      shop: res.locals.shopify?.session?.shop || "unknown"
     });
   }
 });
