@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
+import { useAppBridge } from '@shopify/app-bridge-react';
+import { Redirect } from '@shopify/app-bridge/actions';
 import {
-  Card,
-  Button,
+  LegacyCard,
   Text,
+  Button,
+  VerticalStack,
   Banner,
-  Stack,
   Spinner,
   Badge,
   Divider,
 } from '@shopify/polaris';
-import { useAppBridge } from '../providers/AppBridgeProvider';
-import { Redirect } from '@shopify/app-bridge/actions';
 
 export default function BillingCard() {
   const app = useAppBridge();
@@ -59,7 +59,7 @@ export default function BillingCard() {
     }
   };
 
-  const handleSubscribe = async () => {
+  const handleSubscription = async () => {
     try {
       setIsSettingUp(true);
       setError(null);
@@ -87,9 +87,8 @@ export default function BillingCard() {
       console.log('Redirecting to billing confirmation:', confirmationUrl);
       
       // Use Shopify App Bridge Redirect action to safely redirect within iframe
-      if (app && app.dispatch) {
-        const redirect = Redirect.create(app);
-        redirect.dispatch(Redirect.Action.REMOTE, confirmationUrl);
+      if (app) {
+        Redirect.create(app).dispatch(Redirect.Action.REMOTE, confirmationUrl);
       } else {
         // Fallback to window.location if App Bridge is not available
         console.warn('App Bridge not available, using window.location fallback');
@@ -115,14 +114,14 @@ export default function BillingCard() {
 
   if (isLoading) {
     return (
-      <Card>
-        <Card.Section>
-          <Stack alignment="center">
+      <LegacyCard>
+        <LegacyCard.Section>
+          <VerticalStack align="center">
             <Spinner size="small" />
             <Text variant="bodyMd">Checking subscription status...</Text>
-          </Stack>
-        </Card.Section>
-      </Card>
+          </VerticalStack>
+        </LegacyCard.Section>
+      </LegacyCard>
     );
   }
 
@@ -131,19 +130,19 @@ export default function BillingCard() {
   const planPrice = subscriptionStatus?.plan_price;
 
   return (
-    <Card>
-      <Card.Section>
-        <Stack vertical spacing="loose">
-          <Stack>
+    <LegacyCard>
+      <LegacyCard.Section>
+        <VerticalStack gap="400">
+          <VerticalStack gap="200">
             <Text variant="headingMd" as="h2">
               Maldify Pro Subscription
             </Text>
             {hasActiveSubscription && (
               <Badge status="success">Active Plan</Badge>
             )}
-          </Stack>
+          </VerticalStack>
           
-          <Text variant="bodyMd" color="subdued">
+          <Text variant="bodyMd" tone="subdued">
             Unlock advanced AI features and unlimited post-purchase upsells with Maldify Pro.
           </Text>
 
@@ -158,25 +157,25 @@ export default function BillingCard() {
               Subscription activated successfully! Welcome to Maldify Pro.
             </Banner>
           )}
-        </Stack>
-      </Card.Section>
+        </VerticalStack>
+      </LegacyCard.Section>
 
       <Divider />
 
-      <Card.Section>
+      <LegacyCard.Section>
         {hasActiveSubscription ? (
-          <Stack vertical spacing="loose">
-            <Stack vertical spacing="tight">
+          <VerticalStack gap="400">
+            <VerticalStack gap="200">
               <Text variant="bodyMd">
                 <strong>Current Plan:</strong> {planName}
               </Text>
-              <Text variant="bodyMd" color="subdued">
+              <Text variant="bodyMd" tone="subdued">
                 <strong>Price:</strong> ${planPrice}/month
               </Text>
-              <Text variant="bodyMd" color="subdued">
+              <Text variant="bodyMd" tone="subdued">
                 <strong>Status:</strong> Active
               </Text>
-            </Stack>
+            </VerticalStack>
             
             <Banner status="success">
               <Text variant="bodyMd">
@@ -184,10 +183,10 @@ export default function BillingCard() {
                 unlimited upsells, and priority support.
               </Text>
             </Banner>
-          </Stack>
+          </VerticalStack>
         ) : (
-          <Stack vertical spacing="loose">
-            <Stack vertical spacing="tight">
+          <VerticalStack gap="400">
+            <VerticalStack gap="200">
               <Text variant="bodyMd">
                 <strong>Maldify Pro Features:</strong>
               </Text>
@@ -198,42 +197,42 @@ export default function BillingCard() {
                 <li>Analytics and performance insights</li>
                 <li>Priority customer support</li>
               </ul>
-            </Stack>
+            </VerticalStack>
 
-            <Stack vertical spacing="tight">
+            <VerticalStack gap="200">
               <Text variant="bodyMd">
                 <strong>Pricing:</strong> $29.99/month
               </Text>
-              <Text variant="bodyMd" color="subdued">
+              <Text variant="bodyMd" tone="subdued">
                 Cancel anytime. No setup fees.
               </Text>
-            </Stack>
+            </VerticalStack>
 
-            <Stack distribution="trailing">
+            <VerticalStack align="end">
               <Button
-                primary
+                variant="primary"
                 size="large"
-                onClick={handleSubscribe}
+                onClick={handleSubscription}
                 loading={isSettingUp}
                 disabled={isSettingUp}
               >
                 Subscribe to Maldify Pro
               </Button>
-            </Stack>
-          </Stack>
+            </VerticalStack>
+          </VerticalStack>
         )}
-      </Card.Section>
+      </LegacyCard.Section>
 
       {!hasActiveSubscription && (
-        <Card.Section>
+        <LegacyCard.Section>
           <Banner status="info">
             <Text variant="bodyMd">
               <strong>Free Trial:</strong> Start with our free plan and upgrade anytime. 
               Your current setup will continue working with basic features.
             </Text>
           </Banner>
-        </Card.Section>
+        </LegacyCard.Section>
       )}
-    </Card>
+    </LegacyCard>
   );
 }

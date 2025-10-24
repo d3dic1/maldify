@@ -36,16 +36,22 @@ const usePostPurchase = () => ({
 });
 
 const useMetafield = ({ namespace, key }) => {
-  // Mock metafield - return null for development
-  return null;
+  // Mock metafield - return proper structure for development
+  return {
+    namespace,
+    key,
+    value: null, // No existing metafield in development
+    id: `mock-${namespace}-${key}`
+  };
 };
 
-const useApplyMetafieldsChange = () => ({
-  type: 'updateMetafield',
-  namespace: 'maldify',
-  key: 'claimed',
-  value: 'true'
-});
+const useApplyMetafieldsChange = () => {
+  // Return a function that can be called
+  return (metafieldData) => {
+    console.log('Mock applyMetafieldsChange:', metafieldData);
+    return Promise.resolve();
+  };
+};
 
 export default function PostPurchaseUpsell() {
   const postPurchase = usePostPurchase();
@@ -84,7 +90,7 @@ export default function PostPurchaseUpsell() {
       });
 
       // Apply the metafield change
-      applyMetafieldsChange({
+      await applyMetafieldsChange({
         type: 'updateMetafield',
         namespace: 'maldify',
         key: 'claimed',
