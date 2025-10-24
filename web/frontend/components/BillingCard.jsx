@@ -9,8 +9,11 @@ import {
   Badge,
   Divider,
 } from '@shopify/polaris';
+import { useAppBridge } from '@shopify/app-bridge-react';
+import { Redirect } from '@shopify/app-bridge/actions';
 
 export default function BillingCard() {
+  const app = useAppBridge();
   const [subscriptionStatus, setSubscriptionStatus] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSettingUp, setIsSettingUp] = useState(false);
@@ -75,14 +78,17 @@ export default function BillingCard() {
 
       const data = await response.json();
       
-      // Redirect to Shopify billing confirmation page
-      const redirectUrl = data.confirmationUrl;
-      if (!redirectUrl) {
+      // Get confirmation URL from response
+      const confirmationUrl = data.confirmationUrl;
+      if (!confirmationUrl) {
         throw new Error('No confirmation URL received from server');
       }
       
-      console.log('Redirecting to billing confirmation:', redirectUrl);
-      window.location.href = redirectUrl;
+      console.log('Redirecting to billing confirmation:', confirmationUrl);
+      
+      // Use Shopify App Bridge Redirect action to safely redirect within iframe
+      const redirect = Redirect.create(app);
+      redirect.dispatch(Redirect.Action.REMOTE, confirmationUrl);
       
     } catch (err) {
       console.error('Error setting up billing:', err);
