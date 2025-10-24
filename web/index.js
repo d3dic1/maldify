@@ -232,6 +232,7 @@ app.post("/api/billing/setup", async (req, res) => {
     const planName = process.env.SHOP_PLAN_NAME || "Maldify Pro Subscription";
     const planPrice = "29.99";
     const appUrl = process.env.SHOPIFY_APP_URL;
+    const planId = process.env.SHOP_PLAN_ID || "maldify-pro-monthly"; // Fallback plan ID
     
     // Validate required environment variables
     if (!appUrl) {
@@ -242,6 +243,7 @@ app.post("/api/billing/setup", async (req, res) => {
 
     console.log(`Creating billing subscription for shop: ${session.shop}`);
     console.log(`Plan: ${planName} - $${planPrice}/month`);
+    console.log(`Plan ID: ${planId}`);
 
     // Create a new recurring subscription using the modern Shopify Billing API
     const billingUrl = await shopify.api.rest.BillingRecurring.create({
@@ -262,6 +264,7 @@ app.post("/api/billing/setup", async (req, res) => {
       billing_url: billingUrl.confirmation_url,
       plan_name: planName,
       plan_price: planPrice,
+      plan_id: planId,
       currency: "USD"
     });
 
@@ -274,6 +277,8 @@ app.post("/api/billing/setup", async (req, res) => {
       errorMessage = "Unauthorized: Check your API credentials";
     } else if (error.message.includes("invalid")) {
       errorMessage = "Invalid billing configuration";
+    } else if (error.message.includes("plan")) {
+      errorMessage = "Billing plan configuration error";
     }
     
     res.status(500).json({
