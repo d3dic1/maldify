@@ -20,14 +20,12 @@ scopes = "read_orders,read_customers,read_products,write_products,write_checkout
 redirect_urls = [ "https://example.com/api/auth" ]
 
 # Extensions configuration
-# Admin UI Extension (existing)
 [[extensions]]
 type = "ui"
 name = "Admin UI"
 handle = "app-admin-ui"
 path = "web/frontend"
 
-# Post-Purchase Extension (new)
 [[extensions]]
 type = "post_purchase"
 name = "Maldify Post-Purchase Offer"
