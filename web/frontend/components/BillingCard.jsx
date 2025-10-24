@@ -9,7 +9,7 @@ import {
   Badge,
   Divider,
 } from '@shopify/polaris';
-import { useAppBridge } from '@shopify/app-bridge-react';
+import { useAppBridge } from '../providers/AppBridgeProvider';
 import { Redirect } from '@shopify/app-bridge/actions';
 
 export default function BillingCard() {
