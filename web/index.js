@@ -233,19 +233,18 @@ app.post("/api/billing/setup", async (req, res) => {
     const planName = process.env.SHOP_PLAN_NAME || "Maldify Pro Subscription";
     const planPrice = "29.99";
     const appUrl = process.env.SHOPIFY_APP_URL;
-    const planId = process.env.SHOP_PLAN_ID;
+    const planId = process.env.SHOP_PLAN_ID || "gid://shopify/ProductListing/1234567890";
     
     // Validate required environment variables
     const missingVars = [];
     if (!appUrl) missingVars.push("SHOPIFY_APP_URL");
-    if (!planId) missingVars.push("SHOP_PLAN_ID");
     
     if (missingVars.length > 0) {
       console.error(`Missing required environment variables: ${missingVars.join(", ")}`);
       return res.status(500).json({
         error: "Billing plan not configured. Please set the following environment variables:",
         missing_variables: missingVars,
-        details: "Required: SHOPIFY_APP_URL, SHOP_PLAN_ID"
+        details: "Required: SHOPIFY_APP_URL"
       });
     }
 
@@ -320,7 +319,7 @@ app.post("/api/billing/setup", async (req, res) => {
 
     const data = response.body.data || {};
     
-    if (data.appSubscriptionCreate.userErrors.length > 0) {
+    if (data.appSubscriptionCreate && data.appSubscriptionCreate.userErrors && data.appSubscriptionCreate.userErrors.length > 0) {
       console.error("GraphQL user errors:", data.appSubscriptionCreate.userErrors);
       return res.status(400).json({
         error: "Failed to create billing subscription",
@@ -329,8 +328,8 @@ app.post("/api/billing/setup", async (req, res) => {
       });
     }
 
-    const confirmationUrl = data.appSubscriptionCreate.confirmationUrl;
-    const subscription = data.appSubscriptionCreate.appSubscription;
+    const confirmationUrl = data.appSubscriptionCreate?.confirmationUrl;
+    const subscription = data.appSubscriptionCreate?.appSubscription;
 
     if (!confirmationUrl) {
       console.error("No confirmation URL received from Shopify");
@@ -340,22 +339,21 @@ app.post("/api/billing/setup", async (req, res) => {
       });
     }
 
-    console.log(`Billing subscription created successfully: ${subscription.id}`);
+    console.log(`Billing subscription created successfully: ${subscription?.id}`);
     console.log(`Confirmation URL: ${confirmationUrl}`);
 
-    // Return comprehensive response with both billing_url and confirmationUrl for compatibility
-    res.status(200).json({
-      success: true,
-      billing_url: confirmationUrl,
+    // Return response with confirmationUrl as requested
+    res.status(200).send({
       confirmationUrl: confirmationUrl,
-      subscription_id: subscription.id,
+      success: true,
+      subscription_id: subscription?.id,
       plan_name: planName,
       plan_price: planPrice,
       plan_id: planId,
       currency: "USD",
       shop: session.shop,
       test_mode: process.env.NODE_ENV !== "production",
-      status: subscription.status
+      status: subscription?.status
     });
 
   } catch (error) {

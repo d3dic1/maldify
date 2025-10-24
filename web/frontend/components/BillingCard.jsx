@@ -76,7 +76,7 @@ export default function BillingCard() {
       const data = await response.json();
       
       // Redirect to Shopify billing confirmation page
-      const redirectUrl = data.confirmationUrl || data.billing_url;
+      const redirectUrl = data.confirmationUrl;
       if (!redirectUrl) {
         throw new Error('No confirmation URL received from server');
       }
