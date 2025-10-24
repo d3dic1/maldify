@@ -35,7 +35,7 @@ export default function BillingCard() {
   const checkSubscriptionStatus = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/billing/check-status', {
+      const response = await fetch('/api/billing/check', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

@@ -261,30 +261,84 @@ app.post("/api/billing/setup", async (req, res) => {
     console.log(`Plan ID: ${planId}`);
     console.log(`Return URL: ${appUrl}/billing-redirect`);
 
-    // Create a new recurring subscription using the modern Shopify Billing API
-    const billingUrl = await shopify.api.rest.BillingRecurring.create({
-      session,
-      recurring_application_charge: {
-        name: planName,
-        price: planPrice,
-        currency: "USD",
-        return_url: `${appUrl}/billing-redirect`,
-        test: process.env.NODE_ENV !== "production" // Use test mode in development
+    // Use GraphQL to create a new recurring subscription
+    const mutation = `
+      mutation appSubscriptionCreate($name: String!, $lineItems: [AppSubscriptionLineItemInput!]!, $returnUrl: URL!, $test: Boolean) {
+        appSubscriptionCreate(
+          name: $name
+          lineItems: $lineItems
+          returnUrl: $returnUrl
+          test: $test
+        ) {
+          appSubscription {
+            id
+            name
+            status
+            createdAt
+            currentPeriodEnd
+          }
+          confirmationUrl
+          userErrors {
+            field
+            message
+          }
+        }
       }
+    `;
+
+    const variables = {
+      name: planName,
+      lineItems: [
+        {
+          plan: {
+            appRecurringPricingDetails: {
+              price: {
+                amount: parseFloat(planPrice),
+                currencyCode: "USD"
+              },
+              interval: "EVERY_30_DAYS"
+            }
+          }
+        }
+      ],
+      returnUrl: `${appUrl}/billing-redirect`,
+      test: process.env.NODE_ENV !== "production"
+    };
+
+    const response = await shopify.api.graphql(mutation, { 
+      session,
+      variables 
     });
 
-    console.log(`Billing URL created successfully: ${billingUrl.confirmation_url}`);
+    const data = response.body.data;
+    
+    if (data.appSubscriptionCreate.userErrors.length > 0) {
+      console.error("GraphQL user errors:", data.appSubscriptionCreate.userErrors);
+      return res.status(400).json({
+        error: "Failed to create billing subscription",
+        user_errors: data.appSubscriptionCreate.userErrors,
+        details: "GraphQL validation errors occurred"
+      });
+    }
+
+    const confirmationUrl = data.appSubscriptionCreate.confirmationUrl;
+    const subscription = data.appSubscriptionCreate.appSubscription;
+
+    console.log(`Billing subscription created successfully: ${subscription.id}`);
+    console.log(`Confirmation URL: ${confirmationUrl}`);
 
     // Return comprehensive response
     res.status(200).json({
       success: true,
-      billing_url: billingUrl.confirmation_url,
+      billing_url: confirmationUrl,
+      subscription_id: subscription.id,
       plan_name: planName,
       plan_price: planPrice,
       plan_id: planId,
       currency: "USD",
       shop: session.shop,
-      test_mode: process.env.NODE_ENV !== "production"
+      test_mode: process.env.NODE_ENV !== "production",
+      status: subscription.status
     });
 
   } catch (error) {
@@ -318,31 +372,79 @@ app.post("/api/billing/setup", async (req, res) => {
   }
 });
 
-app.get("/api/billing/check-status", async (req, res) => {
+app.get("/api/billing/check", async (req, res) => {
   try {
     const session = res.locals.shopify.session;
+    
+    // Validate session
+    if (!session || !session.shop) {
+      return res.status(401).json({
+        error: "Invalid session. Please ensure you're properly authenticated."
+      });
+    }
 
-    // Check for active recurring charges
-    const recurringCharges = await shopify.api.rest.BillingRecurring.all({
-      session,
-      status: "active"
-    });
+    console.log(`Checking billing status for shop: ${session.shop}`);
 
-    const hasActiveSubscription = recurringCharges.data && recurringCharges.data.length > 0;
-    const activePlan = hasActiveSubscription ? recurringCharges.data[0] : null;
+    // Use GraphQL to check for active recurring charges
+    const query = `
+      query getRecurringCharges {
+        currentAppInstallation {
+          activeSubscriptions {
+            id
+            name
+            status
+            lineItems {
+              id
+              plan {
+                pricingDetails {
+                  ... on AppRecurringPricing {
+                    price {
+                      amount
+                      currencyCode
+                    }
+                    interval
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    const response = await shopify.api.graphql(query, { session });
+    const data = response.body.data;
+
+    const activeSubscriptions = data?.currentAppInstallation?.activeSubscriptions || [];
+    const hasActiveSubscription = activeSubscriptions.length > 0;
+    const activePlan = hasActiveSubscription ? activeSubscriptions[0] : null;
+
+    console.log(`Found ${activeSubscriptions.length} active subscriptions`);
 
     res.status(200).json({
       has_subscription: hasActiveSubscription,
       plan_name: activePlan?.name || null,
-      plan_price: activePlan?.price || null,
-      status: activePlan?.status || "inactive"
+      plan_price: activePlan?.lineItems?.[0]?.plan?.pricingDetails?.price?.amount || null,
+      currency: activePlan?.lineItems?.[0]?.plan?.pricingDetails?.price?.currencyCode || "USD",
+      status: activePlan?.status || "inactive",
+      shop: session.shop
     });
 
   } catch (error) {
     console.error("Error checking billing status:", error);
+    
+    // Provide more specific error messages
+    let errorMessage = "Failed to check billing status";
+    if (error.message.includes("unauthorized")) {
+      errorMessage = "Unauthorized: Check your API credentials";
+    } else if (error.message.includes("network")) {
+      errorMessage = "Network error: Unable to connect to Shopify";
+    }
+    
     res.status(500).json({
-      error: "Failed to check billing status",
-      details: error.message
+      error: errorMessage,
+      details: error.message,
+      timestamp: new Date().toISOString()
     });
   }
 });
@@ -360,17 +462,42 @@ app.get("/billing-redirect", async (req, res) => {
       return res.redirect(`${process.env.SHOPIFY_APP_URL}/?billing=error&reason=missing_charge_id`);
     }
 
-    // Activate the recurring charge
-    const activatedCharge = await shopify.api.rest.BillingRecurring.activate({
+    // Use GraphQL to activate the subscription
+    const mutation = `
+      mutation appSubscriptionActivate($id: ID!) {
+        appSubscriptionActivate(id: $id) {
+          appSubscription {
+            id
+            name
+            status
+            currentPeriodEnd
+          }
+          userErrors {
+            field
+            message
+          }
+        }
+      }
+    `;
+
+    const response = await shopify.api.graphql(mutation, {
       session,
-      id: chargeId
+      variables: { id: chargeId }
     });
 
+    const data = response.body.data;
+    
+    if (data.appSubscriptionActivate.userErrors.length > 0) {
+      console.error("GraphQL user errors:", data.appSubscriptionActivate.userErrors);
+      return res.redirect(`${process.env.SHOPIFY_APP_URL}/?billing=error&reason=activation_failed`);
+    }
+
+    const subscription = data.appSubscriptionActivate.appSubscription;
     console.log(`Billing activated successfully for shop: ${session.shop}`);
-    console.log(`Charge details:`, activatedCharge);
+    console.log(`Activated subscription: ${subscription.id}`);
 
     // Redirect to admin with success message
-    res.redirect(`${process.env.SHOPIFY_APP_URL}/?billing=success&plan=Maldify Pro`);
+    res.redirect(`${process.env.SHOPIFY_APP_URL}/?billing=success&plan=${subscription.name}`);
 
   } catch (error) {
     console.error("Error confirming billing:", error);
