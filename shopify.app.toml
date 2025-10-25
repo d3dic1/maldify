@@ -2,7 +2,7 @@
 
 client_id = "1ef2fce47497534d788eb2e4e7f37466"
 name = "Maldify"
-application_url = "https://example.com"
+application_url = "https://46be3fc14bdd.ngrok-free.app"
 embedded = true
 
 [build]
@@ -17,7 +17,7 @@ api_version = "2026-01"
 scopes = "write_products"
 
 [auth]
-redirect_urls = [ "https://example.com/api/auth" ]
+redirect_urls = [ "https://46be3fc14bdd.ngrok-free.app/api/auth" ]
 
 [[extensions]]
 type = "ui"
