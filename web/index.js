@@ -473,6 +473,78 @@ app.get("/api/billing/check", async (req, res) => {
   }
 });
 
+// Get available subscription plans
+app.get("/api/billing/plans", async (req, res) => {
+  try {
+    const session = res.locals.shopify.session;
+    
+    // Validate session
+    if (!session || !session.shop) {
+      return res.status(401).json({
+        error: "Invalid session. Please ensure you're properly authenticated."
+      });
+    }
+
+    console.log(`Fetching subscription plans for shop: ${session.shop}`);
+
+    // Define the three subscription plans
+    const plans = [
+      {
+        name: "Free Plan",
+        price_monthly: 0,
+        features: [
+          "Basic AI recommendations",
+          "Up to 10 post-purchase upsells per month",
+          "Standard analytics",
+          "Email support"
+        ],
+        limit: 10
+      },
+      {
+        name: "Starter Plan",
+        price_monthly: 4.99,
+        features: [
+          "Advanced AI recommendations",
+          "Up to 100 post-purchase upsells per month",
+          "Enhanced analytics dashboard",
+          "Custom discount strategies",
+          "Priority email support"
+        ],
+        limit: 100
+      },
+      {
+        name: "Pro Plan",
+        price_monthly: 19.99,
+        features: [
+          "Premium AI recommendations",
+          "Unlimited post-purchase upsells",
+          "Advanced analytics and insights",
+          "Custom discount strategies",
+          "A/B testing for upsells",
+          "Priority customer support",
+          "API access"
+        ],
+        limit: 0 // 0 means unlimited
+      }
+    ];
+
+    res.status(200).json({
+      plans: plans,
+      shop: session.shop,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error("Error fetching subscription plans:", error);
+    
+    res.status(500).json({
+      error: "Failed to fetch subscription plans",
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 app.get("/billing-redirect", async (req, res) => {
   try {
     const session = res.locals.shopify.session;
