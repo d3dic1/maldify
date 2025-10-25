@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useAppBridge } from '@shopify/app-bridge-react';
+import { Redirect } from '@shopify/app-bridge/actions';
 import {
   LegacyCard,
   Text,
@@ -12,10 +14,12 @@ import {
 } from '@shopify/polaris';
 
 export default function PlanSelection() {
+  const app = useAppBridge();
   const [plans, setPlans] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedPlan, setSelectedPlan] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // Fetch subscription plans from backend
   useEffect(() => {
@@ -48,17 +52,63 @@ export default function PlanSelection() {
     }
   };
 
-  const handleSubscribe = (plan) => {
-    setSelectedPlan(plan);
-    console.log('Selected plan for subscription:', {
-      name: plan.name,
-      price: plan.price_monthly,
-      limit: plan.limit,
-      features: plan.features
-    });
-    
-    // TODO: Implement actual billing flow in next step
-    alert(`Selected plan: ${plan.name} - $${plan.price_monthly}/month`);
+  const handleSubscribe = async (plan) => {
+    try {
+      setIsProcessing(true);
+      setError(null);
+      setSelectedPlan(plan);
+
+      console.log('Initiating billing setup for plan:', {
+        name: plan.name,
+        price: plan.price_monthly,
+        limit: plan.limit,
+        features: plan.features
+      });
+
+      // Make POST request to billing setup endpoint
+      const response = await fetch('/api/billing/setup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          plan_id: plan.name.toLowerCase().replace(/\s+/g, '_'), // Convert plan name to plan_id
+          plan_name: plan.name,
+          plan_price: plan.price_monthly,
+          plan_features: plan.features,
+          plan_limit: plan.limit
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to setup billing');
+      }
+
+      const data = await response.json();
+      
+      // Get confirmation URL from response
+      const confirmationUrl = data.confirmationUrl;
+      if (!confirmationUrl) {
+        throw new Error('No confirmation URL received from server');
+      }
+      
+      console.log('Redirecting to billing confirmation:', confirmationUrl);
+      
+      // Use Shopify App Bridge Redirect action to safely redirect within iframe
+      if (app) {
+        Redirect.create(app).dispatch(Redirect.Action.REMOTE, confirmationUrl);
+      } else {
+        // Fallback to window.location if App Bridge is not available
+        console.warn('App Bridge not available, using window.location fallback');
+        window.location.href = confirmationUrl;
+      }
+      
+    } catch (err) {
+      console.error('Error setting up billing:', err);
+      setError(err.message);
+      setIsProcessing(false);
+    }
   };
 
   const getLimitText = (limit) => {
@@ -172,8 +222,15 @@ export default function PlanSelection() {
                   size="large"
                   fullWidth
                   onClick={() => handleSubscribe(plan)}
+                  loading={isProcessing && selectedPlan?.name === plan.name}
+                  disabled={isProcessing}
                 >
-                  {plan.price_monthly === 0 ? 'Get Started Free' : `Subscribe to ${plan.name}`}
+                  {isProcessing && selectedPlan?.name === plan.name 
+                    ? 'Processing...' 
+                    : plan.price_monthly === 0 
+                      ? 'Get Started Free' 
+                      : `Subscribe to ${plan.name}`
+                  }
                 </Button>
                 
                 {plan.price_monthly > 0 && (
