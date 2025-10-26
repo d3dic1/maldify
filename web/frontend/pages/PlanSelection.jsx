@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useAppBridge } from '@shopify/app-bridge-react';
+import { useAppBridge } from '../components/providers/AppBridgeProvider';
 import { Redirect } from '@shopify/app-bridge/actions';
 import {
   LegacyCard,

@@ -1,24 +1,13 @@
-import React, { createContext, useContext } from 'react';
-import { createApp } from '@shopify/app-bridge';
+import { Provider as ShopifyAppBridgeProvider } from '@shopify/app-bridge-react';
 
-// Create App Bridge context
-const AppBridgeContext = createContext(null);
-
+// Re-export the official App Bridge Provider
 export function AppBridgeProvider({ children, config }) {
-  const app = createApp(config);
-  
   return (
-    <AppBridgeContext.Provider value={app}>
+    <ShopifyAppBridgeProvider config={config}>
       {children}
-    </AppBridgeContext.Provider>
+    </ShopifyAppBridgeProvider>
   );
 }
 
-// Hook to use App Bridge
-export function useAppBridge() {
-  const app = useContext(AppBridgeContext);
-  if (!app) {
-    throw new Error('useAppBridge must be used within AppBridgeProvider');
-  }
-  return app;
-}
+// Re-export the official useAppBridge hook
+export { useAppBridge } from '@shopify/app-bridge-react';
