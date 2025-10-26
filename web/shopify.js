@@ -5,6 +5,23 @@ import { restResources } from "@shopify/shopify-api/rest/admin/2024-10";
 
 const DB_PATH = `${process.cwd()}/database.sqlite`;
 
+// Handle SHOPIFY_APP_URL - dynamically set from HOST in development mode BEFORE validation
+if (!process.env.SHOPIFY_APP_URL && process.env.NODE_ENV === 'development') {
+  const cliHost = process.env.HOST || process.env.SHOPIFY_CLI_HOST || process.env.CLOUDFLARE_TUNNEL_URL;
+  if (cliHost) {
+    process.env.SHOPIFY_APP_URL = cliHost.startsWith('http') ? cliHost : `https://${cliHost}`;
+    console.log('ℹ️  Development mode: Using Shopify CLI HOST as SHOPIFY_APP_URL:', process.env.SHOPIFY_APP_URL);
+  } else {
+    // Fallback to localhost for development
+    process.env.SHOPIFY_APP_URL = 'http://localhost:45841';
+    console.log('ℹ️  Development mode: Using localhost fallback as SHOPIFY_APP_URL:', process.env.SHOPIFY_APP_URL);
+  }
+} else if (!process.env.SHOPIFY_APP_URL) {
+  // Production fallback
+  process.env.SHOPIFY_APP_URL = 'https://example.com';
+  console.log('ℹ️  Production mode: Using fallback URL as SHOPIFY_APP_URL:', process.env.SHOPIFY_APP_URL);
+}
+
 // Validate required environment variables
 const requiredEnvVars = {
   SHOPIFY_API_KEY: process.env.SHOPIFY_API_KEY,
@@ -25,28 +42,8 @@ if (missingVars.length > 0) {
   process.exit(1);
 }
 
-// Handle SHOPIFY_APP_URL - dynamically set from HOST in development mode
+// Use the SHOPIFY_APP_URL that was set above
 let appUrlString = process.env.SHOPIFY_APP_URL;
-
-// If SHOPIFY_APP_URL is not set and we're in development mode, use HOST from Shopify CLI
-if (!appUrlString && process.env.NODE_ENV === 'development') {
-  const cliHost = process.env.HOST || process.env.SHOPIFY_CLI_HOST || process.env.CLOUDFLARE_TUNNEL_URL;
-  if (cliHost) {
-    appUrlString = cliHost.startsWith('http') ? cliHost : `https://${cliHost}`;
-    // Set the environment variable for consistency
-    process.env.SHOPIFY_APP_URL = appUrlString;
-    console.log('ℹ️  Development mode: Using Shopify CLI HOST as SHOPIFY_APP_URL:', appUrlString);
-  } else {
-    // Fallback to localhost for development
-    appUrlString = 'http://localhost:45841';
-    process.env.SHOPIFY_APP_URL = appUrlString;
-    console.log('ℹ️  Development mode: Using localhost fallback as SHOPIFY_APP_URL:', appUrlString);
-  }
-} else if (!appUrlString) {
-  // Production fallback
-  appUrlString = 'https://example.com';
-  console.log('ℹ️  Production mode: Using fallback URL as SHOPIFY_APP_URL:', appUrlString);
-}
 
 // Safely extract host information from appUrlString
 let appUrl;
