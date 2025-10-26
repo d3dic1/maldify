@@ -906,6 +906,113 @@ app.get("/api/analytics/roi", async (req, res) => {
   }
 });
 
+// AI Product Recommendation API
+app.post("/api/checkout/recommendation", (req, res, next) => {
+  req.startTime = Date.now();
+  next();
+}, async (req, res) => {
+  try {
+    const session = res.locals.shopify.session;
+    
+    // Validate session
+    if (!session || !session.shop) {
+      return res.status(401).json({
+        error: "Invalid session. Please ensure you're properly authenticated."
+      });
+    }
+
+    const { product_ids } = req.body;
+    
+    // Validate input
+    if (!product_ids || !Array.isArray(product_ids) || product_ids.length === 0) {
+      return res.status(400).json({
+        error: "product_ids array is required and must not be empty"
+      });
+    }
+
+    console.log(`Generating AI recommendations for shop: ${session.shop}`);
+    console.log(`Product IDs in cart: ${product_ids.join(', ')}`);
+
+    // AI/ML Logic - Placeholder implementation
+    const recommendations = [];
+    
+    for (const productId of product_ids) {
+      // Simple AI logic: If product is 101 (Phone), recommend 202 (Case)
+      if (productId === 101) {
+        recommendations.push({
+          product_id: 202,
+          message: "Preporučujemo futrolu za ovaj telefon! Zaštitite svoj uređaj sa našom premium futrolom.",
+          confidence: 0.95,
+          category: "accessories",
+          original_product_id: productId
+        });
+      }
+      // If product is 301 (Laptop), recommend 302 (Mouse)
+      else if (productId === 301) {
+        recommendations.push({
+          product_id: 302,
+          message: "Dodajte wireless miš za bolje iskustvo rada na laptopu!",
+          confidence: 0.88,
+          category: "accessories",
+          original_product_id: productId
+        });
+      }
+      // If product is 401 (Headphones), recommend 402 (Charger)
+      else if (productId === 401) {
+        recommendations.push({
+          product_id: 402,
+          message: "Ne zaboravite dodatni punjač za slušalice! Uvijek imajte rezervni.",
+          confidence: 0.92,
+          category: "accessories",
+          original_product_id: productId
+        });
+      }
+      // Generic recommendation for other products
+      else {
+        recommendations.push({
+          product_id: 999,
+          message: "Preporučujemo proširenje garancije za ovaj proizvod za dodatnu zaštitu!",
+          confidence: 0.75,
+          category: "warranty",
+          original_product_id: productId
+        });
+      }
+    }
+
+    // If no specific recommendations, provide a general one
+    if (recommendations.length === 0) {
+      recommendations.push({
+        product_id: 888,
+        message: "Hvala vam na kupovini! Preporučujemo da pogledate naše najnovije proizvode.",
+        confidence: 0.60,
+        category: "general",
+        original_product_id: null
+      });
+    }
+
+    console.log(`Generated ${recommendations.length} recommendations`);
+
+    res.status(200).json({
+      success: true,
+      recommendations: recommendations,
+      cart_product_ids: product_ids,
+      shop: session.shop,
+      timestamp: new Date().toISOString(),
+      ai_model: "maldify-v1.0",
+      processing_time_ms: Date.now() - req.startTime || 0
+    });
+
+  } catch (error) {
+    console.error("Error generating AI recommendations:", error);
+    
+    res.status(500).json({
+      error: "Failed to generate recommendations",
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 app.use(shopify.cspHeaders());
 app.use(serveStatic(STATIC_PATH, { index: false }));
 
