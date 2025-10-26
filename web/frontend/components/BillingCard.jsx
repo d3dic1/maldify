@@ -90,7 +90,17 @@ export default function BillingCard() {
       
       // Use Shopify App Bridge Redirect action to safely redirect within iframe
       if (app) {
-        Redirect.create(app).dispatch(Redirect.Action.REMOTE, confirmationUrl);
+        try {
+          // Use the modern App Bridge Redirect API
+          const redirect = Redirect.create(app);
+          redirect.dispatch(Redirect.Action.REMOTE, confirmationUrl);
+          console.log('App Bridge redirect dispatched successfully');
+        } catch (redirectError) {
+          console.error('App Bridge redirect failed:', redirectError);
+          // Fallback to window.location if App Bridge redirect fails
+          console.warn('Falling back to window.location due to App Bridge error');
+          window.location.href = confirmationUrl;
+        }
       } else {
         // Fallback to window.location if App Bridge is not available
         console.warn('App Bridge not available, using window.location fallback');
