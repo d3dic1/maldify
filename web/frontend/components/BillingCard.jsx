@@ -17,6 +17,8 @@ export default function BillingCard() {
   const [subscriptionStatus, setSubscriptionStatus] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSettingUp, setIsSettingUp] = useState(false);
+  const [isPausing, setIsPausing] = useState(false);
+  const [isCanceling, setIsCanceling] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
 
@@ -102,6 +104,101 @@ export default function BillingCard() {
     }
   };
 
+  const handlePause = async () => {
+    try {
+      setIsPausing(true);
+      setError(null);
+
+      const subscriptionId = subscriptionStatus?.subscription_id;
+      if (!subscriptionId) {
+        throw new Error('No active subscription found to pause');
+      }
+
+      console.log('Pausing subscription:', subscriptionId);
+
+      const response = await fetch('/api/billing/pause', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          subscription_id: subscriptionId
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to pause subscription');
+      }
+
+      const data = await response.json();
+      console.log('Subscription paused successfully:', data);
+
+      // Update local state to reflect paused status
+      setSubscriptionStatus(prev => ({
+        ...prev,
+        status: 'frozen',
+        plan_name: data.subscription?.name || prev.plan_name
+      }));
+
+      setSuccess('Subscription paused successfully. You can reactivate it anytime.');
+      
+    } catch (err) {
+      console.error('Error pausing subscription:', err);
+      setError(err.message);
+    } finally {
+      setIsPausing(false);
+    }
+  };
+
+  const handleCancel = async () => {
+    try {
+      setIsCanceling(true);
+      setError(null);
+
+      const subscriptionId = subscriptionStatus?.subscription_id;
+      if (!subscriptionId) {
+        throw new Error('No active subscription found to cancel');
+      }
+
+      console.log('Canceling subscription:', subscriptionId);
+
+      const response = await fetch('/api/billing/cancel', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          subscription_id: subscriptionId
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to cancel subscription');
+      }
+
+      const data = await response.json();
+      console.log('Subscription canceled successfully:', data);
+
+      // Update local state to reflect canceled status
+      setSubscriptionStatus(prev => ({
+        ...prev,
+        status: 'cancelled',
+        has_subscription: false,
+        plan_name: data.subscription?.name || prev.plan_name
+      }));
+
+      setSuccess('Subscription canceled successfully. You can subscribe again anytime.');
+      
+    } catch (err) {
+      console.error('Error canceling subscription:', err);
+      setError(err.message);
+    } finally {
+      setIsCanceling(false);
+    }
+  };
+
   const handleDismissError = () => {
     setError(null);
   };
@@ -128,6 +225,7 @@ export default function BillingCard() {
   const hasActiveSubscription = subscriptionStatus?.has_subscription;
   const planName = subscriptionStatus?.plan_name;
   const planPrice = subscriptionStatus?.plan_price;
+  const subscriptionStatusText = subscriptionStatus?.status || 'inactive';
 
   return (
     <LegacyCard>
@@ -138,7 +236,17 @@ export default function BillingCard() {
               Maldify Pro Subscription
             </Text>
             {hasActiveSubscription && (
-              <Badge status="success">Active Plan</Badge>
+              <Badge 
+                status={
+                  subscriptionStatusText === 'active' ? 'success' : 
+                  subscriptionStatusText === 'frozen' ? 'warning' : 
+                  subscriptionStatusText === 'cancelled' ? 'critical' : 'info'
+                }
+              >
+                {subscriptionStatusText === 'active' ? 'Active Plan' :
+                 subscriptionStatusText === 'frozen' ? 'Paused Plan' :
+                 subscriptionStatusText === 'cancelled' ? 'Cancelled Plan' : 'Plan'}
+              </Badge>
             )}
           </VerticalStack>
           
@@ -173,7 +281,11 @@ export default function BillingCard() {
                 <strong>Price:</strong> ${planPrice}/month
               </Text>
               <Text variant="bodyMd" tone="subdued">
-                <strong>Status:</strong> Active
+                <strong>Status:</strong> {
+                  subscriptionStatusText === 'active' ? 'Active' :
+                  subscriptionStatusText === 'frozen' ? 'Paused' :
+                  subscriptionStatusText === 'cancelled' ? 'Cancelled' : 'Unknown'
+                }
               </Text>
             </VerticalStack>
             
@@ -183,6 +295,57 @@ export default function BillingCard() {
                 unlimited upsells, and priority support.
               </Text>
             </Banner>
+
+            {/* Pause and Cancel Buttons */}
+            <VerticalStack gap="200">
+              {subscriptionStatusText === 'active' && (
+                <Button
+                  variant="secondary"
+                  size="medium"
+                  onClick={handlePause}
+                  loading={isPausing}
+                  disabled={isPausing || isCanceling}
+                >
+                  {isPausing ? 'Pausing...' : 'Pause Subscription'}
+                </Button>
+              )}
+              
+              {subscriptionStatusText === 'frozen' && (
+                <VerticalStack gap="200">
+                  <Button
+                    variant="primary"
+                    size="medium"
+                    onClick={() => {
+                      // TODO: Implement resume functionality
+                      alert('Resume functionality will be implemented in the next step');
+                    }}
+                  >
+                    Resume Subscription
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="medium"
+                    onClick={handleCancel}
+                    loading={isCanceling}
+                    disabled={isPausing || isCanceling}
+                  >
+                    {isCanceling ? 'Canceling...' : 'Cancel Subscription'}
+                  </Button>
+                </VerticalStack>
+              )}
+              
+              {subscriptionStatusText === 'cancelled' && (
+                <Button
+                  variant="primary"
+                  size="medium"
+                  onClick={handleSubscription}
+                  loading={isSettingUp}
+                  disabled={isSettingUp}
+                >
+                  Resubscribe to Maldify Pro
+                </Button>
+              )}
+            </VerticalStack>
           </VerticalStack>
         ) : (
           <VerticalStack gap="400">

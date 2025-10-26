@@ -447,6 +447,7 @@ app.get("/api/billing/check", async (req, res) => {
 
     res.status(200).json({
       has_subscription: hasActiveSubscription,
+      subscription_id: activePlan?.id || null,
       plan_name: activePlan?.name || null,
       plan_price: activePlan?.lineItems?.[0]?.plan?.pricingDetails?.price?.amount || null,
       currency: activePlan?.lineItems?.[0]?.plan?.pricingDetails?.price?.currencyCode || "USD",
