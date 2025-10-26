@@ -18,3 +18,28 @@ scopes = "read_orders,read_customers,read_products,write_products,write_checkout
 
 [auth]
 redirect_urls = [ "https://example.com/api/auth" ]
+
+[[extensions]]
+type = "checkout_ui_extension"
+name = "maldify-upsell"
+handle = "maldify-upsell"
+target = "purchase.checkout.actions.render-after"
+
+[extensions.settings]
+[[extensions.settings.fields]]
+key = "title"
+type = "single_line_text_field"
+name = "Upsell Title"
+description = "Title for the upsell offer"
+
+[[extensions.settings.fields]]
+key = "description"
+type = "multi_line_text_field"
+name = "Upsell Description"
+description = "Description for the upsell offer"
+
+[[extensions.settings.fields]]
+key = "button_text"
+type = "single_line_text_field"
+name = "Button Text"
+description = "Text for the add to cart button"

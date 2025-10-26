@@ -1,5 +1,5 @@
-client_id = "1ef2fce47497534d788eb2e4e7f37466"
-name = "Maldify"
+client_id = "ccf4be6ce3115a54cf35d6ab8e8761d1"
+name = "Maldify AI"
 application_url = "https://example.com"
 embedded = true
 
@@ -11,10 +11,35 @@ include_config_on_deploy = true
 api_version = "2026-01"
 
 [access_scopes]
-scopes = "write_products, read_orders, write_checkouts"
+scopes = "read_orders,read_customers,read_products,write_products,write_checkouts"
 
 [auth]
 redirect_urls = [
     "https://example.com/api/auth/callback",
     "https://example.com/api/auth",
 ]
+
+[[extensions]]
+type = "checkout_ui_extension"
+name = "maldify-upsell"
+handle = "maldify-upsell"
+target = "purchase.checkout.actions.render-after"
+
+[extensions.settings]
+[[extensions.settings.fields]]
+key = "title"
+type = "single_line_text_field"
+name = "Upsell Title"
+description = "Title for the upsell offer"
+
+[[extensions.settings.fields]]
+key = "description"
+type = "multi_line_text_field"
+name = "Upsell Description"
+description = "Description for the upsell offer"
+
+[[extensions.settings.fields]]
+key = "button_text"
+type = "single_line_text_field"
+name = "Button Text"
+description = "Text for the add to cart button"
