@@ -87,10 +87,10 @@ export default function BillingCard() {
       
       console.log('Redirecting to billing confirmation:', confirmationUrl);
       
-      // Use window.open to redirect to Shopify billing confirmation
-      // This will open in a new window or redirect within the iframe
-      console.log('Redirecting to billing confirmation:', confirmationUrl);
-      window.open(confirmationUrl, '_self');
+      // Use ExitIframe pattern to safely redirect to Shopify admin from within iframe
+      const exitIframeUrl = `/exitiframe?redirectUri=${encodeURIComponent(confirmationUrl)}`;
+      console.log('Redirecting via ExitIframe to:', exitIframeUrl);
+      window.location.href = exitIframeUrl;
       
       // Don't set isSettingUp to false here - let the redirect happen
       return; // Exit early after redirect
