@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useAppBridge } from '../components/providers/AppBridgeProvider';
-import { Redirect } from '@shopify/app-bridge/actions';
 import {
   LegacyCard,
   Text,
@@ -95,29 +94,13 @@ export default function PlanSelection() {
       
       console.log('Redirecting to billing confirmation:', confirmationUrl);
       
-      // Use Shopify App Bridge Redirect action to safely redirect within iframe
-      if (app) {
-        try {
-          // Use the modern App Bridge Redirect API with proper object syntax
-          const redirect = Redirect.create(app);
-          redirect.dispatch(Redirect.Action.REMOTE, { url: confirmationUrl });
-          console.log('App Bridge redirect dispatched successfully to:', confirmationUrl);
-          
-          // Don't set isProcessing to false here - let the redirect happen
-          return; // Exit early after redirect
-        } catch (redirectError) {
-          console.error('App Bridge redirect failed:', redirectError);
-          // Fallback to window.location if App Bridge redirect fails
-          console.warn('Falling back to window.location due to App Bridge error');
-          window.location.href = confirmationUrl;
-          return; // Exit early after redirect
-        }
-      } else {
-        // Fallback to window.location if App Bridge is not available
-        console.warn('App Bridge not available, using window.location fallback');
-        window.location.href = confirmationUrl;
-        return; // Exit early after redirect
-      }
+      // Use window.open to redirect to Shopify billing confirmation
+      // This will open in a new window or redirect within the iframe
+      console.log('Redirecting to billing confirmation:', confirmationUrl);
+      window.open(confirmationUrl, '_self');
+      
+      // Don't set isProcessing to false here - let the redirect happen
+      return; // Exit early after redirect
       
     } catch (err) {
       console.error('Error setting up billing:', err);
