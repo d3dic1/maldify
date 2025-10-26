@@ -275,7 +275,11 @@ app.post("/api/billing/setup", async (req, res) => {
     console.log(`Creating billing subscription for shop: ${session.shop}`);
     console.log(`Plan: ${planName} - $${planPrice}/month`);
     console.log(`Plan ID: ${planId}`);
-    console.log(`Return URL: ${appUrl}/billing-redirect`);
+    console.log(`App URL: ${appUrl}`);
+    
+    // Use relative path for returnUrl to avoid DNS issues with Cloudflare tunnels
+    const returnUrl = `${appUrl}/billing-redirect`;
+    console.log(`Return URL: ${returnUrl}`);
 
     // Use the GraphQL client from the session
     const client = new shopify.api.clients.Graphql({ session });
@@ -319,7 +323,7 @@ app.post("/api/billing/setup", async (req, res) => {
           }
         }
       ],
-      returnUrl: `${appUrl}/billing-redirect`,
+      returnUrl: returnUrl,
       test: process.env.NODE_ENV !== "production"
     };
 
@@ -570,10 +574,25 @@ app.get("/billing-redirect", async (req, res) => {
 
     console.log(`Billing redirect received for shop: ${session.shop}`);
     console.log(`Charge ID: ${chargeId}`);
+    console.log(`Request host: ${req.get('host')}`);
+    console.log(`Request protocol: ${req.protocol}`);
+    console.log(`Full URL: ${req.protocol}://${req.get('host')}${req.originalUrl}`);
 
     if (!chargeId) {
       console.error("Missing charge_id parameter in billing redirect");
-      return res.redirect(`${getAppUrl()}/?billing=error&reason=missing_charge_id`);
+      // Send HTML response with redirect
+      return res.send(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Redirecting...</title>
+            <script>
+              window.top.location.href = '${getAppUrl()}/?billing=error&reason=missing_charge_id';
+            </script>
+          </head>
+          <body>Redirecting...</body>
+        </html>
+      `);
     }
 
     // Use GraphQL to activate the subscription
@@ -619,12 +638,42 @@ app.get("/billing-redirect", async (req, res) => {
     console.log(`Billing activated successfully for shop: ${session.shop}`);
     console.log(`Activated subscription: ${subscription.id}`);
 
-    // Redirect to admin with success message
-    res.redirect(`${getAppUrl()}/?billing=success&plan=${subscription.name}`);
+    // Send HTML response with redirect to break out of iframe
+    const successUrl = `${getAppUrl()}/?billing=success&plan=${encodeURIComponent(subscription.name)}`;
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Subscription Activated</title>
+          <script>
+            window.top.location.href = '${successUrl}';
+          </script>
+        </head>
+        <body>
+          <p>Your subscription has been activated! Redirecting...</p>
+          <p>If you're not redirected automatically, <a href="${successUrl}">click here</a>.</p>
+        </body>
+      </html>
+    `);
 
   } catch (error) {
     console.error("Error confirming billing:", error);
-    res.redirect(`${getAppUrl()}/?billing=error&reason=${encodeURIComponent(error.message)}`);
+    const errorUrl = `${getAppUrl()}/?billing=error&reason=${encodeURIComponent(error.message)}`;
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Error</title>
+          <script>
+            window.top.location.href = '${errorUrl}';
+          </script>
+        </head>
+        <body>
+          <p>An error occurred. Redirecting...</p>
+          <p>If you're not redirected automatically, <a href="${errorUrl}">click here</a>.</p>
+        </body>
+      </html>
+    `);
   }
 });
 
