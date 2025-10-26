@@ -102,16 +102,21 @@ export default function PlanSelection() {
           const redirect = Redirect.create(app);
           redirect.dispatch(Redirect.Action.REMOTE, { url: confirmationUrl });
           console.log('App Bridge redirect dispatched successfully to:', confirmationUrl);
+          
+          // Don't set isProcessing to false here - let the redirect happen
+          return; // Exit early after redirect
         } catch (redirectError) {
           console.error('App Bridge redirect failed:', redirectError);
           // Fallback to window.location if App Bridge redirect fails
           console.warn('Falling back to window.location due to App Bridge error');
           window.location.href = confirmationUrl;
+          return; // Exit early after redirect
         }
       } else {
         // Fallback to window.location if App Bridge is not available
         console.warn('App Bridge not available, using window.location fallback');
         window.location.href = confirmationUrl;
+        return; // Exit early after redirect
       }
       
     } catch (err) {
