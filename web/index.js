@@ -610,6 +610,184 @@ app.get("/billing-redirect", async (req, res) => {
   }
 });
 
+// Pause subscription
+app.post("/api/billing/pause", async (req, res) => {
+  try {
+    const session = res.locals.shopify.session;
+    const { subscription_id } = req.body;
+    
+    // Validate session
+    if (!session || !session.shop) {
+      return res.status(401).json({
+        error: "Invalid session. Please ensure you're properly authenticated."
+      });
+    }
+
+    // Validate subscription ID
+    if (!subscription_id) {
+      return res.status(400).json({
+        error: "Subscription ID is required"
+      });
+    }
+
+    console.log(`Pausing subscription ${subscription_id} for shop: ${session.shop}`);
+
+    // Use GraphQL to pause the subscription
+    const client = new shopify.api.clients.Graphql({ session });
+    
+    const mutation = `
+      mutation appSubscriptionPause($id: ID!) {
+        appSubscriptionPause(id: $id) {
+          appSubscription {
+            id
+            name
+            status
+            currentPeriodEnd
+          }
+          userErrors {
+            field
+            message
+          }
+        }
+      }
+    `;
+
+    const response = await client.query({ 
+      data: { 
+        query: mutation, 
+        variables: { id: subscription_id } 
+      } 
+    });
+
+    if (!response.body) {
+      throw new Error("No response body received from Shopify");
+    }
+
+    const data = response.body.data || {};
+    
+    if (data.appSubscriptionPause.userErrors.length > 0) {
+      console.error("GraphQL user errors:", data.appSubscriptionPause.userErrors);
+      return res.status(400).json({
+        error: "Failed to pause subscription",
+        details: data.appSubscriptionPause.userErrors[0].message
+      });
+    }
+
+    const subscription = data.appSubscriptionPause.appSubscription;
+    console.log(`Subscription paused successfully: ${subscription.id}`);
+
+    res.status(200).json({
+      success: true,
+      message: "Subscription paused successfully",
+      subscription: {
+        id: subscription.id,
+        name: subscription.name,
+        status: subscription.status,
+        currentPeriodEnd: subscription.currentPeriodEnd
+      },
+      shop: session.shop
+    });
+
+  } catch (error) {
+    console.error("Error pausing subscription:", error);
+    
+    res.status(500).json({
+      error: "Failed to pause subscription",
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Cancel subscription
+app.post("/api/billing/cancel", async (req, res) => {
+  try {
+    const session = res.locals.shopify.session;
+    const { subscription_id } = req.body;
+    
+    // Validate session
+    if (!session || !session.shop) {
+      return res.status(401).json({
+        error: "Invalid session. Please ensure you're properly authenticated."
+      });
+    }
+
+    // Validate subscription ID
+    if (!subscription_id) {
+      return res.status(400).json({
+        error: "Subscription ID is required"
+      });
+    }
+
+    console.log(`Canceling subscription ${subscription_id} for shop: ${session.shop}`);
+
+    // Use GraphQL to cancel the subscription
+    const client = new shopify.api.clients.Graphql({ session });
+    
+    const mutation = `
+      mutation appSubscriptionCancel($id: ID!) {
+        appSubscriptionCancel(id: $id) {
+          appSubscription {
+            id
+            name
+            status
+            currentPeriodEnd
+          }
+          userErrors {
+            field
+            message
+          }
+        }
+      }
+    `;
+
+    const response = await client.query({ 
+      data: { 
+        query: mutation, 
+        variables: { id: subscription_id } 
+      } 
+    });
+
+    if (!response.body) {
+      throw new Error("No response body received from Shopify");
+    }
+
+    const data = response.body.data || {};
+    
+    if (data.appSubscriptionCancel.userErrors.length > 0) {
+      console.error("GraphQL user errors:", data.appSubscriptionCancel.userErrors);
+      return res.status(400).json({
+        error: "Failed to cancel subscription",
+        details: data.appSubscriptionCancel.userErrors[0].message
+      });
+    }
+
+    const subscription = data.appSubscriptionCancel.appSubscription;
+    console.log(`Subscription canceled successfully: ${subscription.id}`);
+
+    res.status(200).json({
+      success: true,
+      message: "Subscription canceled successfully",
+      subscription: {
+        id: subscription.id,
+        name: subscription.name,
+        status: subscription.status,
+        currentPeriodEnd: subscription.currentPeriodEnd
+      },
+      shop: session.shop
+    });
+
+  } catch (error) {
+    console.error("Error canceling subscription:", error);
+    
+    res.status(500).json({
+      error: "Failed to cancel subscription",
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 app.use(shopify.cspHeaders());
 app.use(serveStatic(STATIC_PATH, { index: false }));
 
