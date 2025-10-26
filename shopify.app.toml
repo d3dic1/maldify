@@ -17,9 +17,9 @@ api_version = "2026-01"
 scopes = "write_products"
 
 [auth] 
-redirect_urls = [ "https://46be3fc14bdd.ngrok-free.app/auth/callback", 
-"https://46be3fc14bdd.ngrok-free.app/api/auth/callback", 
-"https://46be3fc14bdd.ngrok-free.app/auth/shopify/callback" 
+redirect_urls = [ "/auth/callback", 
+"/api/auth/callback", 
+"/auth/shopify/callback" 
 ]
 
 [[extensions]]

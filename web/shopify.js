@@ -78,7 +78,7 @@ const shopify = shopifyApp({
   },
   auth: {
     path: "/api/auth",
-    callbackPath: "/api/auth/callback",
+    callbackPath: "/api/auth/callback", // Uses relative path - Shopify App Express handles this correctly
   },
   webhooks: {
     path: "/api/webhooks",
