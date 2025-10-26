@@ -1,38 +1,38 @@
 {
   "HomePage": {
     "heading": "Maldify AI - Smart Post-Purchase Upsells",
-    "learnMore": "Learn more about building out your app in <ShopifyTutorialLink>this Shopify tutorial</ShopifyTutorialLink> 📚",
-    "startPopulatingYourApp": "Ready to go? Start populating your app with some sample products to view and test in your store.",
+    "learnMore": "Learn more about increasing your revenue with intelligent post-purchase offers powered by AI.",
+    "startPopulatingYourApp": "Boost your average order value with AI-powered product recommendations shown at checkout.",
     "title": "Maldify AI",
-    "trophyAltText": "Nice work on building a Shopify app",
-    "yourAppIsReadyToExplore": "Your app is ready to explore! It contains everything you need to get started including the <PolarisLink>Polaris design system</PolarisLink>, <AdminApiLink>Shopify Admin API</AdminApiLink>, and <AppBridgeLink>App Bridge</AppBridgeLink> UI library and components."
+    "trophyAltText": "Maldify AI - Increase revenue with smart upsells",
+    "yourAppIsReadyToExplore": "Welcome to Maldify AI! Transform every checkout into an opportunity to increase revenue with smart, AI-powered product recommendations that your customers will love."
   },
   "NavigationMenu": {
-    "pageName": "Settings"
+    "pageName": "Subscription Plans"
   },
   "NotFound": {
-    "description": "Check the URL and try again, or use the search bar to find what you need.",
-    "heading": "There is no page at this address"
+    "description": "This page doesn't exist. Use the navigation menu to return to a valid page.",
+    "heading": "Page Not Found"
   },
   "PageName": {
-    "body": "Body",
-    "heading": "Heading",
-    "primaryAction": "Primary action",
-    "secondaryAction": "Secondary action",
+    "body": "Settings",
+    "heading": "Maldify AI Settings",
+    "primaryAction": "Save Changes",
+    "secondaryAction": "Cancel",
     "title": "Settings"
   },
   "ProductsCard": {
-    "description": "Sample products are created with a default title and price. You can remove them at any time.",
-    "errorCreatingProductsToast": "There was an error creating products",
+    "description": "View and manage your product catalog to enable AI-powered upsell recommendations.",
+    "errorCreatingProductsToast": "Failed to fetch products from your store",
     "populateProductsButton": {
-      "one": "Populate {{count}} product",
-      "other": "Populate {{count}} products"
+      "one": "View {{count}} product",
+      "other": "View {{count}} products"
     },
     "productsCreatedToast": {
-      "one": "{{count}} product created!",
-      "other": "{{count}} products created!"
+      "one": "{{count}} product found in your store!",
+      "other": "{{count}} products found in your store!"
     },
-    "title": "Product Counter",
+    "title": "Store Products",
     "totalProductsHeading": "TOTAL PRODUCTS"
   }
 }
