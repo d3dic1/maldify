@@ -1,21 +1,20 @@
 client_id = "1ef2fce47497534d788eb2e4e7f37466"
 name = "Maldify"
-# Ispravka 1: Postavite na generički dev URL.
-application_url = "https://example.com"
+application_url = "http://localhost:45841"
 embedded = true
 
 [build]
 automatically_update_urls_on_dev = true
+include_config_on_deploy = true
 
 [webhooks]
 api_version = "2026-01"
 
 [access_scopes]
-scopes = "write_products, read_orders" # Dodajte i read_orders jer Vam treba za analitiku
+scopes = "write_products, read_orders"
 
 [auth]
-# Ispravka 2: Podesite samo putanje koje se koriste u developmentu.
 redirect_urls = [
-    "https://example.com/api/auth/callback",
-    "https://example.com/api/auth",
+    "http://localhost:45841/api/auth/callback",
+    "http://localhost:45841/api/auth",
 ]

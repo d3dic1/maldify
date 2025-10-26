@@ -29,14 +29,14 @@ if (missingVars.length > 0) {
 let appUrlString = process.env.SHOPIFY_APP_URL;
 if (!appUrlString) {
   // Try to get HOST from Shopify CLI
-  const cliHost = process.env.HOST || process.env.SHOPIFY_CLI_HOST;
+  const cliHost = process.env.HOST || process.env.SHOPIFY_CLI_HOST || process.env.CLOUDFLARE_TUNNEL_URL;
   if (cliHost) {
     appUrlString = cliHost.startsWith('http') ? cliHost : `https://${cliHost}`;
     console.log('ℹ️  Using Shopify CLI HOST:', appUrlString);
   } else {
-    // Fallback to development URL
-    appUrlString = 'https://example.com';
-    console.log('ℹ️  SHOPIFY_APP_URL not set, using fallback development URL:', appUrlString);
+    // For development, use localhost
+    appUrlString = 'http://localhost:45841';
+    console.log('ℹ️  SHOPIFY_APP_URL not set, using localhost:', appUrlString);
   }
 }
 
