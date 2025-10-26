@@ -1,35 +1,21 @@
-# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
-
 client_id = "1ef2fce47497534d788eb2e4e7f37466"
 name = "Maldify"
-application_url = "https://46be3fc14bdd.ngrok-free.app"
+# Ispravka 1: Postavite na generički dev URL.
+application_url = "https://example.com"
 embedded = true
 
 [build]
 automatically_update_urls_on_dev = true
-include_config_on_deploy = true
 
 [webhooks]
 api_version = "2026-01"
 
 [access_scopes]
-# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "write_products"
+scopes = "write_products, read_orders" # Dodajte i read_orders jer Vam treba za analitiku
 
-[auth] 
-redirect_urls = [ "/auth/callback", 
-"/api/auth/callback", 
-"/auth/shopify/callback" 
+[auth]
+# Ispravka 2: Podesite samo putanje koje se koriste u developmentu.
+redirect_urls = [
+    "https://example.com/api/auth/callback",
+    "https://example.com/api/auth",
 ]
-
-[[extensions]]
-type = "ui"
-name = "Admin UI"
-handle = "app-admin-ui"
-path = "web/frontend"
-
-[[extensions]]
-type = "post_purchase_extension"
-name = "Maldify Post-Purchase Offer"
-handle = "maldify-post-purchase"
-path = "src/extensions/post-purchase-upsell"

@@ -9,7 +9,6 @@ const DB_PATH = `${process.cwd()}/database.sqlite`;
 const requiredEnvVars = {
   SHOPIFY_API_KEY: process.env.SHOPIFY_API_KEY,
   SHOPIFY_API_SECRET: process.env.SHOPIFY_API_SECRET,
-  SHOPIFY_APP_URL: process.env.SHOPIFY_APP_URL,
 };
 
 // Check for missing environment variables
@@ -26,17 +25,32 @@ if (missingVars.length > 0) {
   process.exit(1);
 }
 
-// Safely extract host information from SHOPIFY_APP_URL
+// Handle SHOPIFY_APP_URL - use Shopify CLI HOST or fallback to development URL
+let appUrlString = process.env.SHOPIFY_APP_URL;
+if (!appUrlString) {
+  // Try to get HOST from Shopify CLI
+  const cliHost = process.env.HOST || process.env.SHOPIFY_CLI_HOST;
+  if (cliHost) {
+    appUrlString = cliHost.startsWith('http') ? cliHost : `https://${cliHost}`;
+    console.log('ℹ️  Using Shopify CLI HOST:', appUrlString);
+  } else {
+    // Fallback to development URL
+    appUrlString = 'https://example.com';
+    console.log('ℹ️  SHOPIFY_APP_URL not set, using fallback development URL:', appUrlString);
+  }
+}
+
+// Safely extract host information from appUrlString
 let appUrl;
 try {
-  // Ensure SHOPIFY_APP_URL has protocol
-  const appUrlString = process.env.SHOPIFY_APP_URL.startsWith('http') 
-    ? process.env.SHOPIFY_APP_URL 
-    : `https://${process.env.SHOPIFY_APP_URL}`;
+  // Ensure appUrlString has protocol
+  const finalAppUrl = appUrlString.startsWith('http') 
+    ? appUrlString 
+    : `https://${appUrlString}`;
   
-  appUrl = new URL(appUrlString);
+  appUrl = new URL(finalAppUrl);
 } catch (error) {
-  console.error('❌ Invalid SHOPIFY_APP_URL:', process.env.SHOPIFY_APP_URL);
+  console.error('❌ Invalid app URL:', appUrlString);
   console.error('Error:', error.message);
   process.exit(1);
 }
@@ -48,7 +62,7 @@ console.log('✅ Shopify App Configuration:');
 console.log(`  - API Key: ${process.env.SHOPIFY_API_KEY}`);
 console.log(`  - Host: ${hostName}`);
 console.log(`  - Scheme: ${hostScheme}`);
-console.log(`  - App URL: ${process.env.SHOPIFY_APP_URL}`);
+console.log(`  - App URL: ${appUrlString}`);
 
 // The transactions with Shopify will always be marked as test transactions, unless NODE_ENV is production.
 // See the ensureBilling helper to learn more about billing in this template.

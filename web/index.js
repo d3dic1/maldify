@@ -19,6 +19,22 @@ const STATIC_PATH =
     ? `${process.cwd()}/frontend/dist`
     : `${process.cwd()}/frontend/`;
 
+// Helper function to get app URL with fallback logic
+const getAppUrl = () => {
+  let appUrl = process.env.SHOPIFY_APP_URL;
+  if (!appUrl) {
+    // Try to get HOST from Shopify CLI
+    const cliHost = process.env.HOST || process.env.SHOPIFY_CLI_HOST;
+    if (cliHost) {
+      appUrl = cliHost.startsWith('http') ? cliHost : `https://${cliHost}`;
+    } else {
+      // Fallback to development URL
+      appUrl = 'https://example.com';
+    }
+  }
+  return appUrl;
+};
+
 const app = express();
 
 // Set up Shopify authentication and webhook handling
@@ -232,21 +248,11 @@ app.post("/api/billing/setup", async (req, res) => {
     // Safely read and validate environment variables
     const planName = process.env.SHOP_PLAN_NAME || "Maldify Pro Subscription";
     const planPrice = "29.99";
-    const appUrl = process.env.SHOPIFY_APP_URL;
+    
+    // Get app URL with fallback logic
+    const appUrl = getAppUrl();
+    
     const planId = process.env.SHOP_PLAN_ID || "gid://shopify/ProductListing/1234567890";
-    
-    // Validate required environment variables
-    const missingVars = [];
-    if (!appUrl) missingVars.push("SHOPIFY_APP_URL");
-    
-    if (missingVars.length > 0) {
-      console.error(`Missing required environment variables: ${missingVars.join(", ")}`);
-      return res.status(500).json({
-        error: "Billing plan not configured. Please set the following environment variables:",
-        missing_variables: missingVars,
-        details: "Required: SHOPIFY_APP_URL"
-      });
-    }
 
     // Validate session
     if (!session || !session.shop) {
@@ -556,7 +562,7 @@ app.get("/billing-redirect", async (req, res) => {
 
     if (!chargeId) {
       console.error("Missing charge_id parameter in billing redirect");
-      return res.redirect(`${process.env.SHOPIFY_APP_URL}/?billing=error&reason=missing_charge_id`);
+      return res.redirect(`${getAppUrl()}/?billing=error&reason=missing_charge_id`);
     }
 
     // Use GraphQL to activate the subscription
@@ -595,7 +601,7 @@ app.get("/billing-redirect", async (req, res) => {
     
     if (data.appSubscriptionActivate.userErrors.length > 0) {
       console.error("GraphQL user errors:", data.appSubscriptionActivate.userErrors);
-      return res.redirect(`${process.env.SHOPIFY_APP_URL}/?billing=error&reason=activation_failed`);
+      return res.redirect(`${getAppUrl()}/?billing=error&reason=activation_failed`);
     }
 
     const subscription = data.appSubscriptionActivate.appSubscription;
@@ -603,11 +609,11 @@ app.get("/billing-redirect", async (req, res) => {
     console.log(`Activated subscription: ${subscription.id}`);
 
     // Redirect to admin with success message
-    res.redirect(`${process.env.SHOPIFY_APP_URL}/?billing=success&plan=${subscription.name}`);
+    res.redirect(`${getAppUrl()}/?billing=success&plan=${subscription.name}`);
 
   } catch (error) {
     console.error("Error confirming billing:", error);
-    res.redirect(`${process.env.SHOPIFY_APP_URL}/?billing=error&reason=${encodeURIComponent(error.message)}`);
+    res.redirect(`${getAppUrl()}/?billing=error&reason=${encodeURIComponent(error.message)}`);
   }
 });
 
