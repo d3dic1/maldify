@@ -22,16 +22,27 @@ const STATIC_PATH =
 // Helper function to get app URL with fallback logic
 const getAppUrl = () => {
   let appUrl = process.env.SHOPIFY_APP_URL;
-  if (!appUrl) {
-    // Try to get HOST from Shopify CLI
-    const cliHost = process.env.HOST || process.env.SHOPIFY_CLI_HOST;
+  
+  // If SHOPIFY_APP_URL is not set and we're in development mode, use HOST from Shopify CLI
+  if (!appUrl && process.env.NODE_ENV === 'development') {
+    const cliHost = process.env.HOST || process.env.SHOPIFY_CLI_HOST || process.env.CLOUDFLARE_TUNNEL_URL;
     if (cliHost) {
       appUrl = cliHost.startsWith('http') ? cliHost : `https://${cliHost}`;
+      // Set the environment variable for consistency
+      process.env.SHOPIFY_APP_URL = appUrl;
+      console.log('ℹ️  Development mode: Using Shopify CLI HOST as SHOPIFY_APP_URL:', appUrl);
     } else {
-      // Fallback to development URL
-      appUrl = 'https://example.com';
+      // Fallback to localhost for development
+      appUrl = 'http://localhost:45841';
+      process.env.SHOPIFY_APP_URL = appUrl;
+      console.log('ℹ️  Development mode: Using localhost fallback as SHOPIFY_APP_URL:', appUrl);
     }
+  } else if (!appUrl) {
+    // Production fallback
+    appUrl = 'https://example.com';
+    console.log('ℹ️  Production mode: Using fallback URL as SHOPIFY_APP_URL:', appUrl);
   }
+  
   return appUrl;
 };
 
