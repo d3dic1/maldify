@@ -56,9 +56,20 @@ export default function App() {
   const { t } = useTranslation();
 
   // App Bridge configuration
+  const host = new URLSearchParams(location.search).get("host");
+  const apiKey = import.meta.env.VITE_SHOPIFY_API_KEY;
+  
+  if (!apiKey) {
+    console.error('VITE_SHOPIFY_API_KEY is not set!');
+  }
+  
+  if (!host) {
+    console.error('Host parameter is missing from URL!');
+  }
+  
   const config = {
-    apiKey: import.meta.env.VITE_SHOPIFY_API_KEY,
-    host: new URLSearchParams(location.search).get("host"),
+    apiKey: apiKey || 'dummy-key',
+    host: host || 'dummy-host',
     forceRedirect: true,
   };
 
