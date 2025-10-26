@@ -98,10 +98,10 @@ export default function PlanSelection() {
       // Use Shopify App Bridge Redirect action to safely redirect within iframe
       if (app) {
         try {
-          // Use the modern App Bridge Redirect API
+          // Use the modern App Bridge Redirect API with proper object syntax
           const redirect = Redirect.create(app);
-          redirect.dispatch(Redirect.Action.REMOTE, confirmationUrl);
-          console.log('App Bridge redirect dispatched successfully');
+          redirect.dispatch(Redirect.Action.REMOTE, { url: confirmationUrl });
+          console.log('App Bridge redirect dispatched successfully to:', confirmationUrl);
         } catch (redirectError) {
           console.error('App Bridge redirect failed:', redirectError);
           // Fallback to window.location if App Bridge redirect fails
