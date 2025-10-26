@@ -789,6 +789,106 @@ app.post("/api/billing/cancel", async (req, res) => {
   }
 });
 
+// Get ROI analytics
+app.get("/api/analytics/roi", async (req, res) => {
+  try {
+    const session = res.locals.shopify.session;
+    
+    // Validate session
+    if (!session || !session.shop) {
+      return res.status(401).json({
+        error: "Invalid session. Please ensure you're properly authenticated."
+      });
+    }
+
+    console.log(`Fetching ROI analytics for shop: ${session.shop}`);
+
+    // Calculate date 30 days ago
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const createdAtMin = thirtyDaysAgo.toISOString();
+
+    // Get orders from the last 30 days using REST API
+    const orders = await shopify.api.rest.Order.all({
+      session,
+      created_at_min: createdAtMin,
+      status: 'any',
+      limit: 250 // Shopify's max limit per request
+    });
+
+    console.log(`Found ${orders.data.length} orders in the last 30 days`);
+
+    // Filter orders that were influenced by our app
+    // We'll look for orders with specific tags or other indicators
+    const appInfluencedOrders = orders.data.filter(order => {
+      // Check if order has tags that indicate our app's influence
+      const tags = order.tags ? order.tags.split(',').map(tag => tag.trim().toLowerCase()) : [];
+      
+      // Look for our app's influence indicators
+      const hasAppTag = tags.some(tag => 
+        tag.includes('maldify') || 
+        tag.includes('upsell') || 
+        tag.includes('post-purchase') ||
+        tag.includes('ai-recommendation')
+      );
+      
+      // Also check if order has line items that might indicate our influence
+      const hasAppLineItems = order.line_items && order.line_items.some(item => 
+        item.name && (
+          item.name.toLowerCase().includes('upsell') ||
+          item.name.toLowerCase().includes('recommended') ||
+          item.name.toLowerCase().includes('ai-suggested')
+        )
+      );
+      
+      return hasAppTag || hasAppLineItems;
+    });
+
+    console.log(`Found ${appInfluencedOrders.length} app-influenced orders`);
+
+    // Calculate total revenue from app-influenced orders
+    const totalRevenue = appInfluencedOrders.reduce((sum, order) => {
+      // Convert total_price from string to number
+      const orderTotal = parseFloat(order.total_price) || 0;
+      return sum + orderTotal;
+    }, 0);
+
+    // Monthly subscription cost (Pro plan)
+    const monthlyCost = 29.99;
+    
+    // Calculate ROI
+    const roi = totalRevenue - monthlyCost;
+
+    // Calculate additional metrics
+    const orderCount = appInfluencedOrders.length;
+    const averageOrderValue = orderCount > 0 ? totalRevenue / orderCount : 0;
+    const roiPercentage = monthlyCost > 0 ? (roi / monthlyCost) * 100 : 0;
+
+    console.log(`ROI Calculation: Revenue: $${totalRevenue.toFixed(2)}, Cost: $${monthlyCost}, ROI: $${roi.toFixed(2)}`);
+
+    res.status(200).json({
+      revenue: parseFloat(totalRevenue.toFixed(2)),
+      cost: monthlyCost,
+      roi: parseFloat(roi.toFixed(2)),
+      roi_percentage: parseFloat(roiPercentage.toFixed(2)),
+      order_count: orderCount,
+      average_order_value: parseFloat(averageOrderValue.toFixed(2)),
+      period_days: 30,
+      shop: session.shop,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error("Error fetching ROI analytics:", error);
+    
+    res.status(500).json({
+      error: "Failed to fetch ROI analytics",
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 app.use(shopify.cspHeaders());
 app.use(serveStatic(STATIC_PATH, { index: false }));
 
