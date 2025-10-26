@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   LegacyCard,
+  Card,
   Text,
   VerticalStack,
   HorizontalStack,
@@ -12,12 +13,16 @@ import {
 
 export default function Dashboard() {
   const [roiData, setRoiData] = useState(null);
+  const [churnData, setChurnData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isChurnLoading, setIsChurnLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [churnError, setChurnError] = useState(null);
 
-  // Fetch ROI analytics data
+  // Fetch analytics data
   useEffect(() => {
     fetchROIData();
+    fetchChurnData();
   }, []);
 
   const fetchROIData = async () => {
@@ -46,12 +51,51 @@ export default function Dashboard() {
     }
   };
 
+  const fetchChurnData = async () => {
+    try {
+      setIsChurnLoading(true);
+      setChurnError(null);
+
+      const response = await fetch('/api/analytics/churn_risk', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch churn risk analytics');
+      }
+
+      const data = await response.json();
+      setChurnData(data);
+    } catch (err) {
+      console.error('Error fetching churn data:', err);
+      setChurnError('Failed to load churn risk analytics. Please try again.');
+    } finally {
+      setIsChurnLoading(false);
+    }
+  };
+
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
       minimumFractionDigits: 2,
     }).format(amount);
+  };
+
+  const getRiskBadge = (riskLevel) => {
+    switch (riskLevel) {
+      case 'HIGH':
+        return <Badge status="critical">HIGH RISK</Badge>;
+      case 'MEDIUM':
+        return <Badge status="warning">MEDIUM RISK</Badge>;
+      case 'LOW':
+        return <Badge status="success">LOW RISK</Badge>;
+      default:
+        return <Badge>UNKNOWN</Badge>;
+    }
   };
 
   const getROIColor = (roi) => {
@@ -223,6 +267,151 @@ export default function Dashboard() {
                 </Text>
               </Banner>
             )}
+          </VerticalStack>
+        </LegacyCard.Section>
+      </LegacyCard>
+
+      {/* AI Churn/Return Risk Report */}
+      <LegacyCard>
+        <LegacyCard.Section>
+          <VerticalStack gap="400">
+            <HorizontalStack align="space-between">
+              <Text variant="headingMd" as="h2">
+                AI Churn/Return Risk Report
+              </Text>
+              {churnData && (
+                <Badge status="info">
+                  {churnData.analysis_period.days} days
+                </Badge>
+              )}
+            </HorizontalStack>
+
+            {isChurnLoading ? (
+              <HorizontalStack gap="300" align="center">
+                <Spinner size="small" />
+                <Text>Analyzing product return patterns...</Text>
+              </HorizontalStack>
+            ) : churnError ? (
+              <Banner status="critical">
+                <Text>{churnError}</Text>
+              </Banner>
+            ) : churnData ? (
+              <VerticalStack gap="400">
+                {/* Summary Stats */}
+                <VerticalStack gap="300">
+                  <Text variant="bodyMd" fontWeight="semibold">
+                    Risk Overview
+                  </Text>
+                  
+                  <HorizontalStack gap="400" align="space-between">
+                    <VerticalStack gap="100">
+                      <Text variant="bodySm" tone="subdued">
+                        Products Analyzed
+                      </Text>
+                      <Text variant="bodyMd" fontWeight="semibold">
+                        {churnData.summary.total_products_analyzed}
+                      </Text>
+                    </VerticalStack>
+                    
+                    <VerticalStack gap="100">
+                      <Text variant="bodySm" tone="subdued">
+                        High Risk Products
+                      </Text>
+                      <Text variant="bodyMd" fontWeight="semibold" tone="critical">
+                        {churnData.summary.high_risk_products}
+                      </Text>
+                    </VerticalStack>
+                    
+                    <VerticalStack gap="100">
+                      <Text variant="bodySm" tone="subdued">
+                        Overall Return Rate
+                      </Text>
+                      <Text variant="bodyMd" fontWeight="semibold">
+                        {churnData.summary.overall_return_rate}%
+                      </Text>
+                    </VerticalStack>
+                  </HorizontalStack>
+                </VerticalStack>
+
+                <Divider />
+
+                {/* Top Risky Products */}
+                <VerticalStack gap="300">
+                  <Text variant="bodyMd" fontWeight="semibold">
+                    Top 5 Risky Products
+                  </Text>
+                  
+                  {churnData.top_risky_products.length > 0 ? (
+                    <VerticalStack gap="200">
+                      {churnData.top_risky_products.map((product, index) => (
+                        <Card key={product.product_id}>
+                          <VerticalStack gap="200">
+                            <HorizontalStack align="space-between">
+                              <VerticalStack gap="100">
+                                <Text variant="bodyMd" fontWeight="semibold">
+                                  {product.product_title}
+                                </Text>
+                                <Text variant="bodySm" tone="subdued">
+                                  ID: {product.product_id}
+                                </Text>
+                              </VerticalStack>
+                              {getRiskBadge(product.risk_level)}
+                            </HorizontalStack>
+                            
+                            <HorizontalStack gap="400" align="space-between">
+                              <VerticalStack gap="100">
+                                <Text variant="bodySm" tone="subdued">
+                                  Return Rate
+                                </Text>
+                                <Text variant="bodyMd" fontWeight="semibold" tone="critical">
+                                  {product.return_rate}%
+                                </Text>
+                              </VerticalStack>
+                              
+                              <VerticalStack gap="100">
+                                <Text variant="bodySm" tone="subdued">
+                                  Risk Score
+                                </Text>
+                                <Text variant="bodyMd" fontWeight="semibold">
+                                  {product.risk_score}
+                                </Text>
+                              </VerticalStack>
+                              
+                              <VerticalStack gap="100">
+                                <Text variant="bodySm" tone="subdued">
+                                  Total Sales
+                                </Text>
+                                <Text variant="bodyMd" fontWeight="semibold">
+                                  {product.total_sales}
+                                </Text>
+                              </VerticalStack>
+                              
+                              <VerticalStack gap="100">
+                                <Text variant="bodySm" tone="subdued">
+                                  Total Refunds
+                                </Text>
+                                <Text variant="bodyMd" fontWeight="semibold" tone="critical">
+                                  {product.total_refunds}
+                                </Text>
+                              </VerticalStack>
+                            </HorizontalStack>
+                          </VerticalStack>
+                        </Card>
+                      ))}
+                    </VerticalStack>
+                  ) : (
+                    <Banner status="success">
+                      <Text>No risky products found! All products have low return rates.</Text>
+                    </Banner>
+                  )}
+                </VerticalStack>
+
+                {/* Analysis Period */}
+                <Text variant="bodySm" tone="subdued">
+                  Analysis period: {churnData.analysis_period.start_date} to {churnData.analysis_period.end_date}
+                </Text>
+              </VerticalStack>
+            ) : null}
           </VerticalStack>
         </LegacyCard.Section>
       </LegacyCard>

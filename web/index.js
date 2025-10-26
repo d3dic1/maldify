@@ -1013,6 +1013,192 @@ app.post("/api/checkout/recommendation", (req, res, next) => {
   }
 });
 
+// AI Churn Risk Analysis API
+app.get("/api/analytics/churn_risk", async (req, res) => {
+  try {
+    const session = res.locals.shopify.session;
+    
+    // Validate session
+    if (!session || !session.shop) {
+      return res.status(401).json({
+        error: "Invalid session. Please ensure you're properly authenticated."
+      });
+    }
+
+    console.log(`Analyzing churn risk for shop: ${session.shop}`);
+
+    // Calculate date 90 days ago
+    const ninetyDaysAgo = new Date();
+    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+    const startDate = ninetyDaysAgo.toISOString().split('T')[0];
+
+    // Fetch orders from the last 90 days
+    const orders = await shopify.api.rest.Order.all({
+      session,
+      limit: 250,
+      created_at_min: startDate,
+      status: 'any'
+    });
+
+    console.log(`Found ${orders.data.length} orders in the last 90 days`);
+
+    // Fetch refunds from the last 90 days
+    const refunds = await shopify.api.rest.Refund.all({
+      session,
+      limit: 250,
+      created_at_min: startDate
+    });
+
+    console.log(`Found ${refunds.data.length} refunds in the last 90 days`);
+
+    // Process orders to get product sales data
+    const productSales = new Map();
+    const productRefunds = new Map();
+
+    // Analyze orders for sales
+    orders.data.forEach(order => {
+      if (order.line_items) {
+        order.line_items.forEach(item => {
+          const productId = item.product_id;
+          const quantity = item.quantity;
+          const price = parseFloat(item.price);
+
+          if (productSales.has(productId)) {
+            const existing = productSales.get(productId);
+            productSales.set(productId, {
+              total_quantity: existing.total_quantity + quantity,
+              total_revenue: existing.total_revenue + (quantity * price),
+              orders_count: existing.orders_count + 1,
+              product_title: item.title,
+              product_handle: item.variant_title || item.title
+            });
+          } else {
+            productSales.set(productId, {
+              total_quantity: quantity,
+              total_revenue: quantity * price,
+              orders_count: 1,
+              product_title: item.title,
+              product_handle: item.variant_title || item.title
+            });
+          }
+        });
+      }
+    });
+
+    // Analyze refunds
+    refunds.data.forEach(refund => {
+      if (refund.refund_line_items) {
+        refund.refund_line_items.forEach(item => {
+          const productId = item.line_item.product_id;
+          const quantity = item.quantity;
+          const price = parseFloat(item.line_item.price);
+
+          if (productRefunds.has(productId)) {
+            const existing = productRefunds.get(productId);
+            productRefunds.set(productId, {
+              total_quantity: existing.total_quantity + quantity,
+              total_amount: existing.total_amount + (quantity * price),
+              refunds_count: existing.refunds_count + 1
+            });
+          } else {
+            productRefunds.set(productId, {
+              total_quantity: quantity,
+              total_amount: quantity * price,
+              refunds_count: 1
+            });
+          }
+        });
+      }
+    });
+
+    // Calculate churn risk for each product
+    const churnRiskData = [];
+    
+    productSales.forEach((salesData, productId) => {
+      const refundData = productRefunds.get(productId) || {
+        total_quantity: 0,
+        total_amount: 0,
+        refunds_count: 0
+      };
+
+      // Calculate return rate
+      const returnRate = salesData.total_quantity > 0 
+        ? (refundData.total_quantity / salesData.total_quantity) * 100 
+        : 0;
+
+      // Calculate revenue loss rate
+      const revenueLossRate = salesData.total_revenue > 0 
+        ? (refundData.total_amount / salesData.total_revenue) * 100 
+        : 0;
+
+      // Calculate risk score (weighted combination)
+      const riskScore = (returnRate * 0.7) + (revenueLossRate * 0.3);
+
+      churnRiskData.push({
+        product_id: productId,
+        product_title: salesData.product_title,
+        product_handle: salesData.product_handle,
+        total_sales: salesData.total_quantity,
+        total_revenue: salesData.total_revenue,
+        total_refunds: refundData.total_quantity,
+        refund_amount: refundData.total_amount,
+        return_rate: Math.round(returnRate * 100) / 100,
+        revenue_loss_rate: Math.round(revenueLossRate * 100) / 100,
+        risk_score: Math.round(riskScore * 100) / 100,
+        orders_count: salesData.orders_count,
+        refunds_count: refundData.refunds_count,
+        risk_level: riskScore > 20 ? 'HIGH' : riskScore > 10 ? 'MEDIUM' : 'LOW'
+      });
+    });
+
+    // Sort by risk score (highest first) and get top 5
+    const topRiskyProducts = churnRiskData
+      .sort((a, b) => b.risk_score - a.risk_score)
+      .slice(0, 5);
+
+    // Calculate overall statistics
+    const totalProducts = churnRiskData.length;
+    const highRiskProducts = churnRiskData.filter(p => p.risk_level === 'HIGH').length;
+    const mediumRiskProducts = churnRiskData.filter(p => p.risk_level === 'MEDIUM').length;
+    const lowRiskProducts = churnRiskData.filter(p => p.risk_level === 'LOW').length;
+
+    const overallReturnRate = churnRiskData.length > 0 
+      ? churnRiskData.reduce((sum, p) => sum + p.return_rate, 0) / churnRiskData.length 
+      : 0;
+
+    console.log(`Churn risk analysis completed. Found ${totalProducts} products, ${highRiskProducts} high risk`);
+
+    res.status(200).json({
+      success: true,
+      analysis_period: {
+        start_date: startDate,
+        end_date: new Date().toISOString().split('T')[0],
+        days: 90
+      },
+      summary: {
+        total_products_analyzed: totalProducts,
+        high_risk_products: highRiskProducts,
+        medium_risk_products: mediumRiskProducts,
+        low_risk_products: lowRiskProducts,
+        overall_return_rate: Math.round(overallReturnRate * 100) / 100
+      },
+      top_risky_products: topRiskyProducts,
+      shop: session.shop,
+      timestamp: new Date().toISOString(),
+      ai_model: "maldify-churn-v1.0"
+    });
+
+  } catch (error) {
+    console.error("Error analyzing churn risk:", error);
+    
+    res.status(500).json({
+      error: "Failed to analyze churn risk",
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 app.use(shopify.cspHeaders());
 app.use(serveStatic(STATIC_PATH, { index: false }));
 
