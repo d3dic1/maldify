@@ -11,7 +11,7 @@ include_config_on_deploy = true
 api_version = "2026-01"
 
 [access_scopes]
-scopes = "write_products, read_orders"
+scopes = "write_products, read_orders, write_checkouts"
 
 [auth]
 redirect_urls = [

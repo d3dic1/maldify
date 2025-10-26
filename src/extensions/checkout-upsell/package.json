@@ -1,0 +1,17 @@
+{
+  "name": "maldify-checkout-upsell",
+  "version": "1.0.0",
+  "description": "AI-powered checkout upsell extension for Maldify",
+  "main": "index.tsx",
+  "scripts": {
+    "build": "shopify app build",
+    "dev": "shopify app dev"
+  },
+  "dependencies": {
+    "@shopify/ui-extensions-react": "^2024.10.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.0",
+    "typescript": "^5.0.0"
+  }
+}
